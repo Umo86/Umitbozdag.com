@@ -1,7 +1,7 @@
 # Umit Bozdag — personal website
 
 A single-page site for Umit Bozdag, Senior Operations Manager (exhibitions & events, London).
-Node.js + Express + EJS, vanilla CSS/JS, no build step. Editorial dark theme with a London
+Node.js + Express + EJS, vanilla CSS/JS, no build step. White, blue and black editorial theme with a London
 hyperlapse under the name, illustrated London scenes, a Tube-style career line, a world map and a
 contact form.
 
@@ -43,7 +43,7 @@ London skyline plays behind the name instead.
   `public/video/london.mp4`; when that file exists the server serves it instead of the Pexels CDN.
   `npm run fetch:video -- desktop` fetches the smaller 720p file.
 - **Different clip:** change the `sources` URLs (or just drop any `public/video/london.mp4` in place).
-- **Look:** `tone: 'duotone'` applies the orange/black treatment from the reference design;
+- **Look:** `tone: 'duotone'` applies the black / blue / white duotone treatment;
   `tone: 'natural'` shows the footage in its original colours.
 
 ## Contact form

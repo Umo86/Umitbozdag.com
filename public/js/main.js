@@ -53,14 +53,14 @@
     const frame = (now) => {
       raf = null;
       if (!running) return;
-      scene.draw(ctx, canvas.width, canvas.height, (now - t0) / 1000, { camera: 'wide' });
+      scene.draw(ctx, canvas.width, canvas.height, (now - t0) / 1000, { camera: 'wide', palette: 'blue' });
       raf = requestAnimationFrame(frame);
     };
     const startCanvas = () => {
       if (!scene || !canvas || running) return;
       ctx = ctx || canvas.getContext('2d');
       resize();
-      if (reduced) { scene.draw(ctx, canvas.width, canvas.height, 2.4, { camera: 'wide' }); return; }
+      if (reduced) { scene.draw(ctx, canvas.width, canvas.height, 2.4, { camera: 'wide', palette: 'blue' }); return; }
       running = true;
       raf = requestAnimationFrame(frame);
     };
@@ -304,7 +304,7 @@
     const label = $('.btn__label', button) || button;
     const thanks = $('.cform__thanks', form);
     const defaultLabel = label.textContent;
-    const setStatus = (msg, ok = false) => { if (status) { status.textContent = msg; status.style.color = ok ? '#3dff9a' : ''; } };
+    const setStatus = (msg, ok = false) => { if (status) { status.textContent = msg; status.style.color = ok ? '#1a47ff' : ''; } };
     const validEmail = (v) => /^\S+@\S+\.\S+$/.test(v);
 
     form.addEventListener('submit', async (e) => {

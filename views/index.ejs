@@ -8,7 +8,7 @@
   <meta property="og:title" content="<%= p.name %> — Exhibitions &amp; Events Operations, London">
   <meta property="og:description" content="<%= p.tagline %>">
   <meta property="og:type" content="website">
-  <meta name="theme-color" content="#0b0b0c">
+  <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -268,7 +268,7 @@
         <div class="map reveal">
           <svg class="map__svg" viewBox="0 0 <%= map.width %> <%= map.height %>" role="img" aria-label="World map of event locations">
             <defs>
-              <radialGradient id="glow"><stop offset="0" stop-color="#ff5a1f" stop-opacity=".9"/><stop offset="1" stop-color="#ff5a1f" stop-opacity="0"/></radialGradient>
+              <radialGradient id="glow"><stop offset="0" stop-color="#1a47ff" stop-opacity=".9"/><stop offset="1" stop-color="#1a47ff" stop-opacity="0"/></radialGradient>
             </defs>
             <g class="map__dots"><% map.dots.forEach((d) => { %><circle cx="<%= d[0] %>" cy="<%= d[1] %>" r="2.1"/><% }) %></g>
             <% const hq = map.cities.find((c) => c.hq); %>
@@ -396,7 +396,7 @@
 
     <div class="footer__giant" aria-hidden="true">
       <svg class="skyline" viewBox="0 0 1200 140" preserveAspectRatio="xMidYMax meet">
-        <g fill="#18181b">
+        <g fill="#1c1e26">
           <rect x="36" y="40" width="10" height="88"/><rect x="31" y="62" width="20" height="10"/>
           <rect x="100" y="92" width="150" height="36"/><rect x="100" y="56" width="24" height="72"/><polygon points="168,92 176,70 184,92"/>
           <rect x="236" y="50" width="14" height="78"/><polygon points="234,50 243,28 252,50"/>
@@ -413,8 +413,8 @@
           <rect x="1080" y="60" width="22" height="68"/><rect x="1110" y="46" width="28" height="82"/><polygon points="1110,46 1124,32 1138,46"/><rect x="1146" y="64" width="20" height="64"/>
           <rect x="0" y="128" width="1200" height="12"/>
         </g>
-        <g fill="none" stroke="#18181b" stroke-width="4"><circle cx="330" cy="72" r="46"/></g>
-        <rect x="0" y="127" width="1200" height="1.5" fill="rgba(255,90,31,.55)"/>
+        <g fill="none" stroke="#1c1e26" stroke-width="4"><circle cx="330" cy="72" r="46"/></g>
+        <rect x="0" y="127" width="1200" height="1.5" fill="rgba(26,71,255,.7)"/>
       </svg>
       <div class="footer__word"><span>U</span><span>M</span><span>I</span><span>T</span></div>
     </div>

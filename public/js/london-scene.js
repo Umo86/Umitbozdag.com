@@ -16,7 +16,7 @@
    API: LondonScene.draw(ctx, width, height, timeSeconds, {
           scene: 'skyline' | 'hall', camera: 'wide' | 'bridge' | 'westminster'
           | 'eye' | 'city' | 'shard' | 'canary', palette: 'orange' | 'ember'
-          | 'night' | 'mono', seed: number, grain: boolean })
+          | 'night' | 'blue' | 'midnight' | 'ice' | 'mono', seed: number, grain: boolean })
    ========================================================================== */
 (function (root) {
   'use strict';
@@ -31,6 +31,9 @@
     orange: { skyTop: '#070508', skyMid: '#38100a', skyLow: '#b93112', horizon: '#ff6a2b', glow: '#ffb45e', sun: '#ffe7bd', sil: '#0a0708', silFar: '#1f0a08', water: '#1a0604', waterDeep: '#050203', light: '#ffcf96', hot: '#fff3df', trailA: '#fff0d8', trailB: '#ff6a2b', cloud: '#200906', cloudRim: '#ff7f45' },
     ember:  { skyTop: '#040305', skyMid: '#1f0806', skyLow: '#7a200c', horizon: '#d8491c', glow: '#ff9a4c', sun: '#ffd9a4', sil: '#070506', silFar: '#170806', water: '#120403', waterDeep: '#030102', light: '#ffc488', hot: '#ffead0', trailA: '#ffe9cf', trailB: '#ff5f24', cloud: '#180605', cloudRim: '#e86a35' },
     night:  { skyTop: '#040407', skyMid: '#120a0e', skyLow: '#36130d', horizon: '#8a2e13', glow: '#cf5a26', sun: '#ffc27a', sil: '#060507', silFar: '#140909', water: '#0d0404', waterDeep: '#030102', light: '#ffc98f', hot: '#fff1dc', trailA: '#ffeedb', trailB: '#ff6a2b', cloud: '#140606', cloudRim: '#b84f26' },
+    blue:     { skyTop: '#04060f', skyMid: '#071a4a', skyLow: '#0d3fd1', horizon: '#2b63ff', glow: '#9dbcff', sun: '#f2f6ff', sil: '#05070d', silFar: '#0b1430', water: '#061033', waterDeep: '#02040c', light: '#dfe9ff', hot: '#ffffff', trailA: '#ffffff', trailB: '#7fa5ff', cloud: '#0a1230', cloudRim: '#4d7dff' },
+    midnight: { skyTop: '#03040a', skyMid: '#050d2a', skyLow: '#092a8a', horizon: '#1a47ff', glow: '#6f97ff', sun: '#eef3ff', sil: '#04060c', silFar: '#0a1128', water: '#040a24', waterDeep: '#02030a', light: '#d6e2ff', hot: '#ffffff', trailA: '#ffffff', trailB: '#5d86ff', cloud: '#070d26', cloudRim: '#3b6bff' },
+    ice:      { day: true, skyTop: '#c9d8ff', skyMid: '#9fb8ff', skyLow: '#5f8cff', horizon: '#2b63ff', glow: '#e8efff', sun: '#ffffff', sil: '#0b1538', silFar: '#2a4092', water: '#1c3a9c', waterDeep: '#0b1f66', light: '#ffffff', hot: '#ffffff', trailA: '#ffffff', trailB: '#bcd0ff', cloud: '#7f9fe8', cloudRim: '#ffffff' },
     mono:   { skyTop: '#050505', skyMid: '#161616', skyLow: '#444444', horizon: '#8a8a8a', glow: '#cfcfcf', sun: '#f4f4f4', sil: '#070707', silFar: '#1b1b1b', water: '#111111', waterDeep: '#030303', light: '#e8e8e8', hot: '#ffffff', trailA: '#ffffff', trailB: '#bdbdbd', cloud: '#161616', cloudRim: '#9a9a9a' },
   };
 
@@ -154,6 +157,7 @@
     ctx.fillStyle = P.sun; circle(ctx, SUN.x, SUN.y, SUN.r);
     // stars in the dark upper sky
     const ph = TAU * t / T;
+    if (P.day) return;
     for (const s of stars()) {
       const a = 0.25 + 0.55 * Math.max(0, Math.sin(ph * s.k + s.p));
       ctx.fillStyle = rgba(P.hot, a * (1 - s.y / 420));
@@ -556,7 +560,7 @@
   /* ---------- main entry ---------- */
   function draw(ctx, w, h, t, opts) {
     opts = opts || {};
-    const P = PALETTES[opts.palette] || PALETTES.orange;
+    const P = PALETTES[opts.palette] || PALETTES.blue;
     const scene = opts.scene === 'hall' ? 'hall' : 'skyline';
     const cam = CAMERAS[opts.camera] || (scene === 'hall' ? CAMERAS.hall : CAMERAS.wide);
     const ph = (TAU * t) / T;

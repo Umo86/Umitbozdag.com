@@ -29,27 +29,27 @@ const only = [...args].find((a) => a.startsWith('--only='));
 const onlyName = only ? only.slice(7) : null;
 
 const FPS = Number(process.env.FPS) || 30, SECONDS = Number(process.env.SECONDS) || 12, VW = 1920, VH = 1080;
-const VIDEO_OPTS = { camera: 'wide', palette: process.env.PALETTE || 'orange' };
+const VIDEO_OPTS = { camera: 'wide', palette: process.env.PALETTE || 'blue' };
 const VIDEO_OUT = process.env.OUT || path.join(PUBLIC, 'video', 'london-skyline.mp4');
 
 // name → size, scene options, time offset into the loop, encoding
 const STILLS = [
-  { file: 'img/scenes/poster.jpg',      w: 1920, h: 1080, t: 2.4, type: 'jpeg', q: 0.82, opts: { camera: 'wide' } },
-  { file: 'img/scenes/wide.webp',       w: 1600, h: 1000, t: 9.0, opts: { camera: 'wide', palette: 'ember' } },
-  { file: 'img/scenes/westminster.webp', w: 1000, h: 1250, t: 1.0, opts: { camera: 'westminster' } },
-  { file: 'img/scenes/eye.webp',        w: 900,  h: 1200, t: 5.0, opts: { camera: 'eye', palette: 'night' } },
-  { file: 'img/scenes/shard.webp',      w: 900,  h: 1200, t: 3.0, opts: { camera: 'shard', palette: 'ember' } },
-  { file: 'img/scenes/city.webp',       w: 900,  h: 1200, t: 7.0, opts: { camera: 'city' } },
-  { file: 'img/scenes/bridge.webp',     w: 1600, h: 1000, t: 4.0, opts: { camera: 'bridge' } },
-  { file: 'img/scenes/canary.webp',     w: 1600, h: 1000, t: 6.0, opts: { camera: 'canary', palette: 'night' } },
-  { file: 'img/scenes/hall-1.webp',     w: 1600, h: 1000, t: 2.0, opts: { scene: 'hall', seed: 1 } },
-  { file: 'img/scenes/hall-2.webp',     w: 1600, h: 1000, t: 5.0, opts: { scene: 'hall', seed: 2, palette: 'ember' } },
-  { file: 'img/scenes/hall-3.webp',     w: 1600, h: 1000, t: 8.0, opts: { scene: 'hall', seed: 3, palette: 'night' } },
-  { file: 'img/scenes/hall-4.webp',     w: 1600, h: 1000, t: 3.0, opts: { scene: 'hall', seed: 4, palette: 'mono' } },
-  { file: 'img/scenes/log-1.webp',      w: 1200, h: 800,  t: 4.0, opts: { scene: 'hall', seed: 5 } },
-  { file: 'img/scenes/log-2.webp',      w: 1200, h: 800,  t: 1.5, opts: { camera: 'city', palette: 'ember' } },
-  { file: 'img/scenes/log-3.webp',      w: 1200, h: 800,  t: 6.5, opts: { scene: 'hall', seed: 6, palette: 'ember' } },
-  { file: 'img/scenes/log-4.webp',      w: 1200, h: 800,  t: 9.5, opts: { scene: 'hall', seed: 7, palette: 'night' } },
+  { file: 'img/scenes/poster.jpg',      w: 1920, h: 1080, t: 2.4, type: 'jpeg', q: 0.82, opts: { camera: 'wide', palette: 'blue' } },
+  { file: 'img/scenes/wide.webp',       w: 1600, h: 1000, t: 9.0, opts: { camera: 'wide', palette: 'midnight' } },
+  { file: 'img/scenes/westminster.webp', w: 1000, h: 1250, t: 1.0, opts: { camera: 'westminster', palette: 'blue' } },
+  { file: 'img/scenes/eye.webp',        w: 900,  h: 1200, t: 5.0, opts: { camera: 'eye', palette: 'midnight' } },
+  { file: 'img/scenes/shard.webp',      w: 900,  h: 1200, t: 3.0, opts: { camera: 'shard', palette: 'ice' } },
+  { file: 'img/scenes/city.webp',       w: 900,  h: 1200, t: 7.0, opts: { camera: 'city', palette: 'blue' } },
+  { file: 'img/scenes/bridge.webp',     w: 1600, h: 1000, t: 4.0, opts: { camera: 'bridge', palette: 'blue' } },
+  { file: 'img/scenes/canary.webp',     w: 1600, h: 1000, t: 6.0, opts: { camera: 'canary', palette: 'midnight' } },
+  { file: 'img/scenes/hall-1.webp',     w: 1600, h: 1000, t: 2.0, opts: { scene: 'hall', seed: 1, palette: 'blue' } },
+  { file: 'img/scenes/hall-2.webp',     w: 1600, h: 1000, t: 5.0, opts: { scene: 'hall', seed: 2, palette: 'ice' } },
+  { file: 'img/scenes/hall-3.webp',     w: 1600, h: 1000, t: 8.0, opts: { scene: 'hall', seed: 3, palette: 'midnight' } },
+  { file: 'img/scenes/hall-4.webp',     w: 1600, h: 1000, t: 3.0, opts: { scene: 'hall', seed: 4, palette: 'blue' } },
+  { file: 'img/scenes/log-1.webp',      w: 1200, h: 800,  t: 4.0, opts: { scene: 'hall', seed: 5, palette: 'blue' } },
+  { file: 'img/scenes/log-2.webp',      w: 1200, h: 800,  t: 1.5, opts: { camera: 'city', palette: 'ice' } },
+  { file: 'img/scenes/log-3.webp',      w: 1200, h: 800,  t: 6.5, opts: { scene: 'hall', seed: 6, palette: 'midnight' } },
+  { file: 'img/scenes/log-4.webp',      w: 1200, h: 800,  t: 9.5, opts: { scene: 'hall', seed: 7, palette: 'blue' } },
 ];
 
 async function main() {
