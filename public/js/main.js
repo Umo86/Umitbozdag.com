@@ -133,8 +133,8 @@
       const avail = wrap.clientWidth;
       const widths = words.map((w) => w.getBoundingClientRect().width);
       let size;
-      if (stacked) size = (100 * avail) / Math.max(...widths) * 0.98;
-      else size = (100 * avail) / (widths.reduce((a, b) => a + b, 0) + 20 * (words.length - 1)) * 0.985;
+      if (stacked) size = (100 * avail) / Math.max(...widths) * 0.95;
+      else size = (100 * avail) / (widths.reduce((a, b) => a + b, 0) + 20 * (words.length - 1)) * 0.975;
       h1.style.fontSize = `${Math.floor(size)}px`;
     };
     fit();

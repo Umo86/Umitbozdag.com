@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><%= show.name %> — <%= p.name %> · <%= show.role %></title>
   <meta name="description" content="<%= show.name %> (<%= show.venue %><%= show.city ? ', ' + show.city : '' %>): <%= p.name %>'s role as <%= show.role %>. <%= show.summary %>">
   <meta property="og:title" content="<%= show.name %> — <%= p.name %>">
@@ -115,7 +115,7 @@
               <a class="showrow" href="/shows/<%= r.id %>">
                 <span class="showrow__logo"><% if (rl) { %><img src="<%= rl %>" alt=""><% } else { %><span class="initials"><%= r.name.split(/\s+/).slice(0, 3).map((w) => w[0]).join('').toUpperCase() %></span><% } %></span>
                 <div><strong><%= r.name %></strong><span class="showrow__venue"><%= r.venue %><%= r.city ? ', ' + r.city : '' %></span></div>
-                <div class="showrow__right"><% if (r.years) { %><span class="mono"><%= r.years %></span><% } %><span class="mono">Details →</span></div>
+                <div class="showrow__right"><% if (r.years) { %><span class="mono"><%= r.years %></span><% } %><span class="mono showrow__more"><span class="showrow__more-text">Details </span>→</span></div>
               </a>
             <% }) %>
           </div>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><%= p.name %> — <%= p.title %> · Exhibitions &amp; Events, London</title>
   <meta name="description" content="<%= p.name %>, <%= p.title %> at <%= p.company %>. <%= p.statement %>">
   <meta property="og:title" content="<%= p.name %> — Exhibitions &amp; Events Operations, London">
@@ -190,6 +190,7 @@
           <% }) %>
         </div>
 
+        <p class="swipe-hint mono" aria-hidden="true">Swipe for more <span>→</span></p>
         <div class="showlist">
           <% groups.forEach((g) => { %>
             <div class="showgroup reveal">
@@ -208,7 +209,7 @@
                       </div>
                       <div class="showrow__right">
                         <% if (it.years) { %><span class="mono"><%= it.years %></span><% } %>
-                        <span class="mono showrow__more">Details →</span>
+                        <span class="mono showrow__more"><span class="showrow__more-text">Details </span>→</span>
                       </div>
                     </a>
                   </li>
