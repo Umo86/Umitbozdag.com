@@ -12,7 +12,7 @@ const MESSAGES_FILE = path.join(__dirname, 'data', 'messages.json');
 
 async function start() {
   const app = express();
-  const worldMap = await buildWorldMap(profile.cities);
+  const worldMap = buildWorldMap(profile.cities);
 
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
