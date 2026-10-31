@@ -23,7 +23,7 @@ Edit that file and restart; no HTML changes are needed.
 - To show the phone number publicly, uncomment the `phone` line in `data/profile.js`.
 - Map cities need `lat`/`lon`; the one marked `hq: true` is the origin of the animated routes.
 - Styling lives in `public/css/style.css`, behaviour in `public/js/main.js`, markup in `views/index.ejs`.
-- The world map dots are generated once at startup from Natural Earth data (`lib/worldmap.js`).
+- The world map dots are pre-generated into `data/worldmap-dots.json`; rerun `npm run build:map` only if you change the grid in `lib/worldmap.js`.
 
 ## Contact form
 
