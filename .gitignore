@@ -3,3 +3,6 @@ data/messages.json
 .env
 .DS_Store
 npm-debug.log*
+
+screenshots/
+public/video/*.part

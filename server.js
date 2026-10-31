@@ -1,5 +1,6 @@
 const path = require('path');
-const fs = require('fs/promises');
+const fs = require('fs');
+const fsp = require('fs/promises');
 const express = require('express');
 const compression = require('compression');
 const helmet = require('helmet');
@@ -9,6 +10,19 @@ const { buildWorldMap } = require('./lib/worldmap');
 
 const PORT = process.env.PORT || 3000;
 const MESSAGES_FILE = path.join(__dirname, 'data', 'messages.json');
+const LOCAL_VIDEOS = ['london.mp4', 'london.webm'].map((f) => path.join(__dirname, 'public', 'video', f));
+
+// Header film: a self-hosted public/video/london.mp4 (or .webm) wins over the remote (Pexels) files.
+function heroVideo() {
+  const v = { ...(profile.heroVideo || {}) };
+  const local = LOCAL_VIDEOS.find((f) => fs.existsSync(f));
+  if (local) {
+    const url = '/video/' + path.basename(local);
+    v.sources = { mobile: url, desktop: url, large: url };
+    v.local = true;
+  }
+  return v;
+}
 
 async function start() {
   const app = express();
@@ -27,10 +41,13 @@ async function start() {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", 'https://fonts.googleapis.com', "'unsafe-inline'"],
           fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-          imgSrc: ["'self'", 'data:'],
+          imgSrc: ["'self'", 'data:', 'https://images.pexels.com'],
+          mediaSrc: ["'self'", 'https://videos.pexels.com'],
           scriptSrc: ["'self'"],
+          connectSrc: ["'self'"],
         },
       },
+      crossOriginEmbedderPolicy: false,
     })
   );
   app.use(compression());
@@ -38,7 +55,7 @@ async function start() {
   app.use(express.static(path.join(__dirname, 'public'), { maxAge: '7d' }));
 
   app.get('/', (req, res) => {
-    res.render('index', { p: profile, map: worldMap, year: new Date().getFullYear() });
+    res.render('index', { p: profile, map: worldMap, video: heroVideo(), year: new Date().getFullYear() });
   });
 
   app.get('/api/profile', (req, res) => res.json(profile));
@@ -92,9 +109,9 @@ async function start() {
         });
       } else if (!process.env.VERCEL) {
         let list = [];
-        try { list = JSON.parse(await fs.readFile(MESSAGES_FILE, 'utf8')); } catch { /* first message */ }
+        try { list = JSON.parse(await fsp.readFile(MESSAGES_FILE, 'utf8')); } catch { /* first message */ }
         list.push(entry);
-        await fs.writeFile(MESSAGES_FILE, JSON.stringify(list, null, 2));
+        await fsp.writeFile(MESSAGES_FILE, JSON.stringify(list, null, 2));
       } else {
         return res.status(503).json({ ok: false, fallback: 'mailto', to: profile.email });
       }
@@ -109,7 +126,7 @@ async function start() {
 
   app.use((req, res) => res.status(404).render('404', { p: profile }));
 
-  app.listen(PORT, "0.0.0.0", () => console.log(`Umit Bozdag site running at http://localhost:${PORT}`));
+  app.listen(PORT, '0.0.0.0', () => console.log(`Umit Bozdag site running at http://localhost:${PORT}`));
 }
 
 start();

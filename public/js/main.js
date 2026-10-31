@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Umit Bozdag — Exhibitions & Events
-   Front-end behaviour. Vanilla JS, no dependencies.
+   Umit Bozdag — front-end behaviour. Vanilla JS, no dependencies.
+   (Scripts are loaded from /js only: the Content-Security-Policy forbids inline scripts.)
    ========================================================================== */
 (() => {
   'use strict';
@@ -9,82 +9,202 @@
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const lerp = (a, b, t) => a + (b - a) * t;
-
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
   const body = document.body;
 
-  /* ---------- Split text (hero name) ---------- */
-  function splitText() {
-    $$('[data-split]').forEach((el) => {
-      const text = el.textContent.trim();
-      el.textContent = '';
-      el.setAttribute('aria-hidden', 'true');
-      const line = document.createElement('span');
-      line.className = 'split-line';
-      Array.from(text).forEach((ch, i) => {
-        const s = document.createElement('span');
-        s.className = 'ch';
-        s.style.setProperty('--ci', i);
-        s.textContent = ch === ' ' ? ' ' : ch;
-        line.appendChild(s);
-      });
-      el.appendChild(line);
+  /* ---------- London clock ---------- */
+  function clock() {
+    const els = $$('[data-clock]');
+    if (!els.length) return;
+    let fmt, tzFmt;
+    try {
+      fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/London' });
+      tzFmt = new Intl.DateTimeFormat('en-GB', { timeZoneName: 'short', timeZone: 'Europe/London' });
+    } catch { return; }
+    const tick = () => {
+      const now = new Date();
+      const time = fmt.format(now);
+      els.forEach((el) => { el.textContent = time; });
+      const part = tzFmt.formatToParts(now).find((p) => p.type === 'timeZoneName');
+      if (part) $$('[data-tz]').forEach((el) => { el.textContent = part.value; });
+    };
+    tick();
+    setInterval(tick, 15000);
+  }
+
+  /* ---------- Hero: illustrated fallback + the London film ---------- */
+  function hero() {
+    const hero = $('.hero');
+    const video = $('.hero__video');
+    const canvas = $('.hero__canvas');
+    if (!hero) return;
+    const scene = window.LondonScene;
+
+    // Canvas fallback: draws the illustrated London loop until the video is playing.
+    let running = false, raf = null, ctx = null;
+    const t0 = performance.now();
+    const resize = () => {
+      const r = hero.getBoundingClientRect();
+      const s = Math.min(1, 1280 / Math.max(1, r.width));
+      canvas.width = Math.max(2, Math.round(r.width * s));
+      canvas.height = Math.max(2, Math.round(r.height * s));
+    };
+    const frame = (now) => {
+      raf = null;
+      if (!running) return;
+      scene.draw(ctx, canvas.width, canvas.height, (now - t0) / 1000, { camera: 'wide' });
+      raf = requestAnimationFrame(frame);
+    };
+    const startCanvas = () => {
+      if (!scene || !canvas || running) return;
+      ctx = ctx || canvas.getContext('2d');
+      resize();
+      if (reduced) { scene.draw(ctx, canvas.width, canvas.height, 2.4, { camera: 'wide' }); return; }
+      running = true;
+      raf = requestAnimationFrame(frame);
+    };
+    const stopCanvas = () => { running = false; if (raf) cancelAnimationFrame(raf); raf = null; };
+    let rt;
+    window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (running) resize(); }, 120); });
+    startCanvas();
+
+    if (!video) return;
+    const conn = navigator.connection || {};
+    if (reduced || conn.saveData) { video.remove(); return; } // respect the visitor: poster/illustration only
+
+    const w = window.innerWidth, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const src = w < 768 ? video.dataset.srcMobile : (w * dpr > 2300 ? video.dataset.srcLarge : video.dataset.srcDesktop);
+    if (!src) return;
+
+    let ready = false;
+    video.addEventListener('playing', () => {
+      if (ready) return;
+      ready = true;
+      hero.classList.add('video-ready');
+      setTimeout(stopCanvas, 1800);
+    });
+    video.addEventListener('error', () => { hero.classList.add('video-failed'); startCanvas(); });
+    video.src = src;
+    video.load();
+    const p = video.play();
+    if (p && p.catch) p.catch(() => { /* autoplay blocked: the illustration stays */ });
+
+    // Pause everything while the hero is off screen.
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver((entries) => {
+        const visible = entries[0].isIntersecting;
+        if (visible) {
+          if (ready) { if (video.paused) video.play().catch(() => {}); } else startCanvas();
+        } else {
+          if (!video.paused) video.pause();
+          stopCanvas();
+        }
+      }, { threshold: 0.02 }).observe(hero);
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { if (!video.paused) video.pause(); stopCanvas(); }
+      else if (ready) video.play().catch(() => {}); else startCanvas();
     });
   }
 
-  /* ---------- Preloader: doors open ---------- */
-  function preloader() {
-    const doors = $('.doors');
-    const count = $('.doors__count');
-
-    const open = () => {
-      if (doors) doors.classList.add('is-open');
-      body.classList.remove('is-loading');
-      // Next frame so the split-letter transition starts after the doors begin moving.
-      requestAnimationFrame(() => requestAnimationFrame(() => body.classList.add('is-ready')));
-      window.setTimeout(() => doors && doors.classList.add('is-gone'), reduced ? 50 : 1250);
+  /* ---------- Hero name: split into letters and fit the width ---------- */
+  function heroName() {
+    const h1 = $('.hero__name');
+    const words = $$('.hero__word');
+    if (!h1 || !words.length) return;
+    words.forEach((w, wi) => {
+      const text = w.textContent.trim();
+      w.textContent = '';
+      w.setAttribute('aria-hidden', 'true');
+      Array.from(text).forEach((ch, i) => {
+        const s = document.createElement('span');
+        s.className = 'ch';
+        s.style.setProperty('--ci', wi * 5 + i);
+        s.textContent = ch;
+        w.appendChild(s);
+      });
+    });
+    const wrap = h1.parentElement;
+    const fit = () => {
+      const stacked = window.innerWidth < 760;
+      h1.classList.toggle('is-stacked', stacked);
+      h1.style.fontSize = '100px';
+      const avail = wrap.clientWidth;
+      const widths = words.map((w) => w.getBoundingClientRect().width);
+      let size;
+      if (stacked) size = (100 * avail) / Math.max(...widths) * 0.98;
+      else size = (100 * avail) / (widths.reduce((a, b) => a + b, 0) + 20 * (words.length - 1)) * 0.985;
+      h1.style.fontSize = `${Math.floor(size)}px`;
     };
+    fit();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    let rt;
+    window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(fit, 80); });
+    window.addEventListener('load', fit);
+  }
 
-    if (!doors || reduced) { open(); return; }
+  /* ---------- Intro ---------- */
+  function intro() {
+    const go = () => {
+      body.classList.remove('is-loading');
+      body.classList.add('is-ready');
+      setTimeout(() => { const c = $('.curtain'); if (c) c.remove(); }, 1500);
+    };
+    if (reduced) { go(); return; }
+    const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    Promise.race([fonts, new Promise((r) => setTimeout(r, 1500))]).then(() => setTimeout(go, 120));
+    setTimeout(() => { if (body.classList.contains('is-loading')) go(); }, 3500); // never trap the visitor
+  }
 
-    let n = 3;
-    if (count) count.textContent = String(n);
-    const tick = () => {
-      n -= 1;
-      if (n >= 1) {
-        if (count) count.textContent = String(n);
-        window.setTimeout(tick, 360);
-      } else {
-        open();
+  /* ---------- Scroll effects ---------- */
+  function scrollFx() {
+    const progress = $('.progress'), nav = $('.nav');
+    const heroMedia = $('.hero__media'), heroBottom = $('.hero__bottom'), word = $('[data-parallax]');
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const y = window.scrollY || 0, vh = window.innerHeight;
+      const max = document.documentElement.scrollHeight - vh;
+      if (progress) progress.style.transform = `scaleX(${max > 0 ? clamp(y / max, 0, 1) : 0})`;
+      if (nav) nav.classList.toggle('is-scrolled', y > 30);
+      if (!reduced && heroMedia) {
+        if (y < vh * 1.3) {
+          heroMedia.style.transform = `translate3d(0, ${(y * 0.28).toFixed(1)}px, 0)`;
+          if (heroBottom) {
+            heroBottom.style.transform = `translate3d(0, ${(y * 0.14).toFixed(1)}px, 0)`;
+            heroBottom.style.opacity = String(clamp(1 - y / (vh * 0.85), 0, 1));
+          }
+        }
+      }
+      if (!reduced && word) {
+        const r = word.getBoundingClientRect();
+        if (r.bottom > 0 && r.top < vh) {
+          const p = (r.top + r.height / 2 - vh / 2) / vh;
+          word.style.transform = `translate3d(${(-p * 10).toFixed(2)}vw, 0, 0)`;
+        }
       }
     };
-    window.setTimeout(tick, 420);
-    // Safety net: never leave the visitor stuck behind the doors.
-    window.setTimeout(() => { if (body.classList.contains('is-loading')) open(); }, 4000);
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    window.addEventListener('resize', update);
+    update();
   }
 
   /* ---------- Reveal on scroll + counters ---------- */
-  function formatNumber(n) {
-    return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
-
+  const formatNumber = (n) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   function countUp(el) {
     const target = parseFloat(el.dataset.count) || 0;
     if (reduced) { el.textContent = formatNumber(target); return; }
-    const dur = 1600;
-    const start = performance.now();
+    const dur = 1500, start = performance.now();
     const step = (now) => {
       const t = clamp((now - start) / dur, 0, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = formatNumber(target * eased);
+      el.textContent = formatNumber(target * (1 - Math.pow(1 - t, 3)));
       if (t < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   }
-
   function reveals() {
-    const targets = $$('.reveal, .job, .map');
+    const targets = $$('.reveal, .line, .map, .footer__giant');
     const counters = $$('[data-count]');
     if (!('IntersectionObserver' in window)) {
       targets.forEach((el) => el.classList.add('is-visible'));
@@ -92,65 +212,25 @@
       return;
     }
     const io = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        io.unobserve(entry.target);
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
     targets.forEach((el) => io.observe(el));
-
     const cio = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        countUp(entry.target);
-        cio.unobserve(entry.target);
-      });
+      entries.forEach((e) => { if (e.isIntersecting) { countUp(e.target); cio.unobserve(e.target); } });
     }, { threshold: 0.5 });
     counters.forEach((el) => cio.observe(el));
   }
 
-  /* ---------- Scroll: progress bar, nav state, timeline fill ---------- */
-  function scrollEffects() {
-    const progress = $('.scroll-progress');
-    const nav = $('.nav');
-    const timeline = $('.timeline');
-    const fill = $('.timeline__fill');
-    let ticking = false;
-
-    const update = () => {
-      ticking = false;
-      const y = window.scrollY || window.pageYOffset;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      if (progress) progress.style.transform = `scaleX(${max > 0 ? clamp(y / max, 0, 1) : 0})`;
-      if (nav) nav.classList.toggle('is-scrolled', y > 40);
-      if (timeline && fill) {
-        const r = timeline.getBoundingClientRect();
-        const anchor = window.innerHeight * 0.62; // line "draws" as the rail passes this point
-        const p = clamp((anchor - r.top) / r.height, 0, 1);
-        fill.style.transform = `scaleY(${p})`;
-      }
-    };
-    const onScroll = () => {
-      if (!ticking) { ticking = true; requestAnimationFrame(update); }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    update();
-  }
-
-  /* ---------- Custom cursor ---------- */
+  /* ---------- Custom cursor + magnetic buttons ---------- */
   function cursor() {
     const el = $('.cursor');
-    if (!el || isTouch) { if (el) el.remove(); return; }
+    if (!el) return;
+    if (isTouch) { el.remove(); return; }
     let tx = -100, ty = -100, x = tx, y = ty, raf = null, active = false;
-
     const loop = () => {
-      x = lerp(x, tx, 0.18);
-      y = lerp(y, ty, 0.18);
-      el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
-      if (Math.abs(tx - x) > 0.1 || Math.abs(ty - y) > 0.1) raf = requestAnimationFrame(loop);
-      else raf = null;
+      x = lerp(x, tx, 0.2); y = lerp(y, ty, 0.2);
+      el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+      raf = Math.abs(tx - x) > 0.1 || Math.abs(ty - y) > 0.1 ? requestAnimationFrame(loop) : null;
     };
     window.addEventListener('pointermove', (e) => {
       if (e.pointerType && e.pointerType !== 'mouse') return;
@@ -159,249 +239,29 @@
       if (!raf) raf = requestAnimationFrame(loop);
     }, { passive: true });
     document.addEventListener('mouseleave', () => { active = false; el.classList.remove('is-active'); });
-    document.addEventListener('mouseenter', () => { if (tx > 0) { active = true; el.classList.add('is-active'); } });
-
-    const HOVER = 'a, button, [data-tilt], input, textarea, select, label';
-    document.addEventListener('pointerover', (e) => {
-      if (e.target.closest && e.target.closest(HOVER)) el.classList.add('is-hover');
-    });
+    const HOVER = 'a, button, summary, input, textarea, label, .cap, .show, .logcard';
+    document.addEventListener('pointerover', (e) => { if (e.target.closest && e.target.closest(HOVER)) el.classList.add('is-hover'); });
     document.addEventListener('pointerout', (e) => {
-      if (e.target.closest && e.target.closest(HOVER)) {
-        const to = e.relatedTarget;
-        if (!to || !(to.closest && to.closest(HOVER))) el.classList.remove('is-hover');
-      }
+      if (!(e.target.closest && e.target.closest(HOVER))) return;
+      const to = e.relatedTarget;
+      if (!to || !(to.closest && to.closest(HOVER))) el.classList.remove('is-hover');
     });
   }
-
-  /* ---------- Magnetic buttons ---------- */
   function magnetic() {
     if (isTouch || reduced) return;
     $$('.magnetic').forEach((btn) => {
       btn.addEventListener('pointermove', (e) => {
         const r = btn.getBoundingClientRect();
-        const dx = e.clientX - (r.left + r.width / 2);
-        const dy = e.clientY - (r.top + r.height / 2);
-        btn.style.setProperty('--bx', `${(dx * 0.28).toFixed(1)}px`);
-        btn.style.setProperty('--by', `${(dy * 0.28).toFixed(1)}px`);
+        btn.style.setProperty('--bx', `${((e.clientX - (r.left + r.width / 2)) * 0.25).toFixed(1)}px`);
+        btn.style.setProperty('--by', `${((e.clientY - (r.top + r.height / 2)) * 0.25).toFixed(1)}px`);
       });
-      btn.addEventListener('pointerleave', () => {
-        btn.style.setProperty('--bx', '0px');
-        btn.style.setProperty('--by', '0px');
-      });
+      btn.addEventListener('pointerleave', () => { btn.style.setProperty('--bx', '0px'); btn.style.setProperty('--by', '0px'); });
     });
-  }
-
-  /* ---------- Tilt (stands + badge) ---------- */
-  function tilt() {
-    if (isTouch || reduced) return;
-    const badge = $('.badge');
-    const hero = $('.hero');
-
-    $$('[data-tilt]').forEach((el) => {
-      if (el === badge) return;
-      const max = parseFloat(el.dataset.tilt) || 8;
-      el.addEventListener('pointermove', (e) => {
-        const r = el.getBoundingClientRect();
-        const px = (e.clientX - r.left) / r.width;
-        const py = (e.clientY - r.top) / r.height;
-        el.style.setProperty('--rx', `${((0.5 - py) * max).toFixed(2)}deg`);
-        el.style.setProperty('--ry', `${((px - 0.5) * max).toFixed(2)}deg`);
-      });
-      el.addEventListener('pointerleave', () => {
-        el.style.setProperty('--rx', '0deg');
-        el.style.setProperty('--ry', '0deg');
-      });
-    });
-
-    if (badge && hero) {
-      const reset = () => {
-        badge.style.setProperty('--rx', '0deg');
-        badge.style.setProperty('--ry', '0deg');
-        badge.style.setProperty('--mx', '50%');
-        badge.style.setProperty('--my', '50%');
-      };
-      hero.addEventListener('pointermove', (e) => {
-        const r = badge.getBoundingClientRect();
-        const h = hero.getBoundingClientRect();
-        const cx = r.left + r.width / 2;
-        const cy = r.top + r.height / 2;
-        const nx = clamp((e.clientX - cx) / (h.width / 2), -1, 1);
-        const ny = clamp((e.clientY - cy) / (h.height / 2), -1, 1);
-        badge.style.setProperty('--ry', `${(nx * 16).toFixed(2)}deg`);
-        badge.style.setProperty('--rx', `${(-ny * 12).toFixed(2)}deg`);
-        badge.style.setProperty('--mx', `${clamp(((e.clientX - r.left) / r.width) * 100, -30, 130).toFixed(1)}%`);
-        badge.style.setProperty('--my', `${clamp(((e.clientY - r.top) / r.height) * 100, -30, 130).toFixed(1)}%`);
-      });
-      hero.addEventListener('pointerleave', reset);
-    }
-  }
-
-  /* ---------- Spotlight (mouse-follow glow on cards) ---------- */
-  function spotlight() {
-    if (isTouch) return;
-    $$('.spotlight').forEach((el) => {
-      el.addEventListener('pointermove', (e) => {
-        const r = el.getBoundingClientRect();
-        el.style.setProperty('--sx', `${(e.clientX - r.left).toFixed(0)}px`);
-        el.style.setProperty('--sy', `${(e.clientY - r.top).toFixed(0)}px`);
-      });
-    });
-  }
-
-  /* ---------- Hero canvas: visitor flow on the show floor ---------- */
-  function heroCanvas() {
-    const canvas = $('.hero__canvas');
-    const hero = $('.hero');
-    if (!canvas || !hero) return;
-    const ctx = canvas.getContext('2d', { alpha: true });
-    if (!ctx) return;
-
-    const GRID = 80;
-    const COLORS = [
-      { c: '238,240,245', w: 0.72 }, // visitors (white-ish)
-      { c: '255,106,43', w: 0.18 },  // signage orange
-      { c: '82,227,255', w: 0.10 },  // wayfinding cyan
-    ];
-    const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-
-    let w = 0, h = 0, dpr = 1, particles = [], raf = null, last = 0;
-    let running = false, visible = true;
-
-    const pickColor = () => {
-      let r = Math.random();
-      for (const k of COLORS) { r -= k.w; if (r <= 0) return k.c; }
-      return COLORS[0].c;
-    };
-
-    const spawn = (anywhere) => {
-      const cols = Math.ceil(w / GRID) + 1;
-      const rows = Math.ceil(h / GRID) + 1;
-      const horizontal = Math.random() < 0.5;
-      const dir = DIRS[horizontal ? (Math.random() < 0.5 ? 0 : 1) : (Math.random() < 0.5 ? 2 : 3)];
-      let x, y;
-      if (horizontal) {
-        y = Math.floor(Math.random() * rows) * GRID;
-        x = anywhere ? Math.random() * w : (dir[0] > 0 ? -GRID : w + GRID);
-      } else {
-        x = Math.floor(Math.random() * cols) * GRID;
-        y = anywhere ? Math.random() * h : (dir[1] > 0 ? -GRID : h + GRID);
-      }
-      const color = pickColor();
-      const special = color !== COLORS[0].c;
-      return {
-        x, y, dx: dir[0], dy: dir[1],
-        speed: 34 + Math.random() * 70,
-        size: special ? 1.9 + Math.random() * 1.1 : 1.2 + Math.random() * 1.2,
-        color,
-        alpha: special ? 0.95 : 0.45 + Math.random() * 0.4,
-        sinceTurn: 0,
-      };
-    };
-
-    const resize = () => {
-      const r = hero.getBoundingClientRect();
-      w = Math.max(1, Math.round(r.width));
-      h = Math.max(1, Math.round(r.height));
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, h);
-      const n = clamp(Math.round((w * h) / 22000), 18, 90);
-      particles = Array.from({ length: n }, () => spawn(true));
-    };
-
-    const stepParticle = (p, dt) => {
-      const dist = p.speed * dt;
-      const before = p.dx ? p.x : p.y;
-      p.x += p.dx * dist;
-      p.y += p.dy * dist;
-      p.sinceTurn += dist;
-      const after = p.dx ? p.x : p.y;
-      // Did we cross an intersection?
-      const from = Math.floor(before / GRID), to = Math.floor(after / GRID);
-      if (from !== to && p.sinceTurn > GRID * 0.9 && Math.random() < 0.42) {
-        const node = (p.dx > 0 || p.dy > 0 ? to : from) * GRID;
-        if (p.dx) { p.x = node; } else { p.y = node; }
-        const turnRight = Math.random() < 0.5;
-        const nd = p.dx ? [0, turnRight ? 1 : -1] : [turnRight ? 1 : -1, 0];
-        p.dx = nd[0]; p.dy = nd[1];
-        p.sinceTurn = 0;
-      }
-      const m = GRID * 1.5;
-      if (p.x < -m || p.x > w + m || p.y < -m || p.y > h + m) Object.assign(p, spawn(false));
-    };
-
-    const draw = (now) => {
-      raf = null;
-      if (!running) return;
-      const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
-      last = now;
-
-      // Fade previous frame -> trails
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = 'rgba(0,0,0,0.12)';
-      ctx.fillRect(0, 0, w, h);
-      ctx.globalCompositeOperation = 'lighter';
-
-      for (const p of particles) {
-        stepParticle(p, dt);
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(${p.color},${p.alpha})`;
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        if (p.color !== COLORS[0].c) {
-          ctx.beginPath();
-          ctx.fillStyle = `rgba(${p.color},0.12)`;
-          ctx.arc(p.x, p.y, p.size * 3.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      ctx.globalCompositeOperation = 'source-over';
-      raf = requestAnimationFrame(draw);
-    };
-
-    const drawStatic = () => {
-      ctx.clearRect(0, 0, w, h);
-      for (const p of particles) {
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(${p.color},${p.alpha})`;
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    };
-
-    const start = () => {
-      if (reduced || running || !visible || document.hidden) return;
-      running = true;
-      last = performance.now();
-      if (!raf) raf = requestAnimationFrame(draw);
-    };
-    const stop = () => { running = false; if (raf) { cancelAnimationFrame(raf); raf = null; } };
-
-    let resizeT;
-    window.addEventListener('resize', () => {
-      window.clearTimeout(resizeT);
-      resizeT = window.setTimeout(() => { resize(); if (reduced) drawStatic(); }, 120);
-    });
-    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver((entries) => {
-        visible = entries[0].isIntersecting;
-        visible ? start() : stop();
-      }, { threshold: 0.02 }).observe(hero);
-    }
-
-    resize();
-    if (reduced) drawStatic(); else start();
   }
 
   /* ---------- Mobile nav ---------- */
   function mobileNav() {
-    const nav = $('.nav');
-    const burger = $('.nav__burger');
+    const nav = $('.nav'), burger = $('.nav__burger');
     if (!nav || !burger) return;
     const setOpen = (open) => {
       nav.classList.toggle('is-open', open);
@@ -410,65 +270,69 @@
       burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
     };
     burger.addEventListener('click', () => setOpen(!nav.classList.contains('is-open')));
-    $$('.nav__links a, .nav .btn').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+    $$('.nav__links a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
     window.matchMedia('(min-width: 761px)').addEventListener('change', (e) => { if (e.matches) setOpen(false); });
   }
 
+  /* ---------- Offer tabs (decorative toggle) ---------- */
+  function offerTabs() {
+    const tabs = $$('.offer__tabs button');
+    const kicker = $('.offer__kicker');
+    const base = kicker ? kicker.textContent : '';
+    tabs.forEach((t) => t.addEventListener('click', () => {
+      tabs.forEach((o) => { o.classList.toggle('is-on', o === t); o.setAttribute('aria-selected', String(o === t)); });
+      if (kicker) kicker.textContent = `${base} — ${t.textContent.toLowerCase()}`;
+    }));
+  }
+
+  /* ---------- Images that fail to load keep a styled background ---------- */
+  function imageFallbacks() {
+    $$('img').forEach((img) => {
+      const mark = () => img.classList.add('is-broken');
+      if (img.complete && img.naturalWidth === 0 && img.src) mark();
+      img.addEventListener('error', mark);
+    });
+  }
+
   /* ---------- Contact form ---------- */
   function contactForm() {
-    const form = $('.regform');
+    const form = $('.cform');
     if (!form) return;
-    const status = $('.regform__status', form);
+    const status = $('.cform__status', form);
     const button = $('button[type="submit"]', form);
     const label = $('.btn__label', button) || button;
-    const printedName = $('.printed__name', form);
+    const thanks = $('.cform__thanks', form);
     const defaultLabel = label.textContent;
-
-    const setStatus = (msg, ok = false) => {
-      if (!status) return;
-      status.textContent = msg;
-      status.style.color = ok ? '#3dff9a' : '';
-    };
+    const setStatus = (msg, ok = false) => { if (status) { status.textContent = msg; status.style.color = ok ? '#3dff9a' : ''; } };
+    const validEmail = (v) => /^\S+@\S+\.\S+$/.test(v);
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
-      const name = (data.name || '').trim();
-      const email = (data.email || '').trim();
-      const message = (data.message || '').trim();
-
-      if (!name || !/^\S+@\S+\.\S+$/.test(email) || message.length < 5) {
+      const name = (data.name || '').trim(), email = (data.email || '').trim(), message = (data.message || '').trim();
+      if (!name || !validEmail(email) || message.length < 5) {
         setStatus('Please add your name, a valid email and a short message.');
-        const bad = !name ? 'name' : !/^\S+@\S+\.\S+$/.test(email) ? 'email' : 'message';
-        const field = form.elements[bad];
+        const field = form.elements[!name ? 'name' : !validEmail(email) ? 'email' : 'message'];
         if (field) field.focus();
         return;
       }
-
       setStatus('');
       button.disabled = true;
-      label.textContent = 'Printing…';
+      label.textContent = 'Sending…';
       try {
-        const res = await fetch('/api/contact', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(data),
-        });
+        const res = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) });
         let json = {};
         try { json = await res.json(); } catch { /* non-JSON error page */ }
         if (json.fallback === 'mailto' && json.to) {
-          // Server can't deliver it: hand the message to the visitor's own email app.
           const subject = encodeURIComponent(`Website enquiry from ${name}`);
           const bodyText = encodeURIComponent(`${message}\n\n${name}${data.company ? `\n${data.company}` : ''}`);
           window.location.href = `mailto:${json.to}?subject=${subject}&body=${bodyText}`;
           setStatus('Opening your email app so you can send this directly…', true);
           return;
         }
-        if (!res.ok || !json.ok) {
-          throw new Error(json.error || `Something went wrong (${res.status}). Please email me directly.`);
-        }
-        if (printedName) printedName.textContent = `Thanks, ${name.split(/\s+/)[0]}!`;
+        if (!res.ok || !json.ok) throw new Error(json.error || `Something went wrong (${res.status}). Please email me directly.`);
+        if (thanks) thanks.textContent = `Thanks, ${name.split(/\s+/)[0]}!`;
         form.classList.add('is-sent');
         form.reset();
         setStatus('Message sent.', true);
@@ -479,27 +343,25 @@
         label.textContent = defaultLabel;
       }
     });
-
-    // Let the visitor dismiss the printed badge and send another message.
-    const printed = $('.printed', form);
-    if (printed) printed.addEventListener('click', () => { form.classList.remove('is-sent'); setStatus(''); });
+    const done = $('.cform__done', form);
+    if (done) done.addEventListener('click', () => { form.classList.remove('is-sent'); setStatus(''); });
   }
 
   /* ---------- Boot ---------- */
   const init = () => {
-    splitText();
+    clock();
+    heroName();
+    hero();
     reveals();
-    scrollEffects();
+    scrollFx();
     cursor();
     magnetic();
-    tilt();
-    spotlight();
-    heroCanvas();
     mobileNav();
+    offerTabs();
+    imageFallbacks();
     contactForm();
-    preloader();
+    intro();
   };
-
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
