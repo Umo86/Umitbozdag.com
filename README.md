@@ -27,14 +27,25 @@ Edit that file and restart; no HTML changes are needed.
 
 ## Contact form
 
-`POST /api/contact` validates the message (name, valid email, message of 5+ characters), ignores
-submissions that fill the hidden honeypot field, rate-limits to one message per IP every 30 seconds,
-and appends the message to **`data/messages.json`** (git-ignored). Check that file for new enquiries.
+`POST /api/contact` validates the message, ignores bots that fill the hidden honeypot field and
+allows one message per visitor every 30 seconds. It then delivers the enquiry in the first way that works:
 
-For production you will probably want email delivery instead of a JSON file: replace the
-"store" step in `server.js` with Nodemailer, Resend, Postmark, SendGrid, etc. Note that on hosts
-with an ephemeral filesystem (Render free tier, Railway, Heroku-style dynos) `messages.json` is
-wiped on every deploy/restart, so email delivery is recommended there.
+1. **Email (recommended).** Set these environment variables and every enquiry is emailed to you,
+   with Reply-To set to the visitor:
+
+   | Variable | Example (Hostinger mailbox) |
+   | --- | --- |
+   | `SMTP_HOST` | `smtp.hostinger.com` |
+   | `SMTP_PORT` | `465` |
+   | `SMTP_USER` | `hello@umitbozdag.com` |
+   | `SMTP_PASS` | the mailbox password |
+   | `CONTACT_TO` | optional, defaults to the email in `data/profile.js` |
+
+2. **File.** Without SMTP settings, messages are appended to `data/messages.json` (git-ignored).
+   This file is wiped on each redeploy.
+3. **Visitor's email app.** If neither works (e.g. on Vercel, where the disk is read-only, or the
+   mail server is down) the browser opens the visitor's email app with the message pre-filled
+   to your address, so no enquiry is lost.
 
 ## Deploy on Hostinger
 
@@ -44,12 +55,11 @@ Needs a Hostinger plan with **Node.js Web Apps** (Business or Cloud web hosting,
 2. Connect GitHub and pick `Umo86/Umitbozdag.com`, branch `master` (or `new-website` until it is merged).
 3. Build settings: framework **Express** (or "Other"), Node version **20 or 22**,
    install/build command `npm install`, entry file `server.js`, start command `npm start`.
-4. Environment variables: `NODE_ENV=production`. Hostinger provides `PORT` automatically.
+4. Environment variables: `NODE_ENV=production`, plus the `SMTP_*` variables above so the contact
+   form emails you. Hostinger provides `PORT` automatically.
 5. Deploy, then attach `umitbozdag.com` / `www.umitbozdag.com` under the app's **Domains** and enable SSL.
 
 Every push to the chosen branch can redeploy automatically (toggle in the app's deployment settings).
-Messages from the contact form are saved to `data/messages.json`, which is overwritten on each
-redeploy, so read them often or switch to email (see above).
 
 **On a Hostinger VPS instead:** `git clone` the repo, `npm install --omit=dev`, then
 `NODE_ENV=production pm2 start server.js --name umit-site`, and put Nginx in front for the domain and SSL.

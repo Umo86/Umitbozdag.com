@@ -43,8 +43,17 @@ async function start() {
 
   app.get('/api/profile', (req, res) => res.json(profile));
 
-  // Simple contact endpoint: validates and stores messages to data/messages.json.
-  // Swap the storage step for an email service (e.g. Nodemailer, Resend) in production.
+  // Contact endpoint. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (and optionally
+  // SMTP_FROM, CONTACT_TO) to have enquiries emailed to you — see README.
+  const mailer = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
+    ? require('nodemailer').createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT) || 465,
+        secure: (Number(process.env.SMTP_PORT) || 465) === 465,
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      })
+    : null;
+  console.log(mailer ? '[contact] emailing enquiries via ' + process.env.SMTP_HOST : '[contact] SMTP not set; enquiries saved to data/messages.json');
   const recent = new Map();
   app.post('/api/contact', async (req, res) => {
     const { name = '', email = '', company = '', message = '', website = '' } = req.body || {};
@@ -69,17 +78,32 @@ async function start() {
       return res.status(400).json({ ok: false, error: 'Please add your name, a valid email and a short message.' });
     }
 
+    // 1) Email it, if SMTP settings are provided (e.g. a Hostinger mailbox).
+    // 2) Otherwise save it to data/messages.json (only where the disk is writable).
+    // 3) If neither is possible, tell the browser to open the visitor's email app instead.
     try {
-      let list = [];
-      try { list = JSON.parse(await fs.readFile(MESSAGES_FILE, 'utf8')); } catch { /* first message */ }
-      list.push(entry);
-      await fs.writeFile(MESSAGES_FILE, JSON.stringify(list, null, 2));
+      if (mailer) {
+        await mailer.sendMail({
+          from: `"umitbozdag.com" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+          to: process.env.CONTACT_TO || profile.email,
+          replyTo: `"${entry.name.replace(/"/g, '')}" <${entry.email}>`,
+          subject: `Website enquiry from ${entry.name}${entry.company ? ` (${entry.company})` : ''}`,
+          text: `${entry.message}\n\n— ${entry.name}\n${entry.email}${entry.company ? `\n${entry.company}` : ''}\nSent ${entry.receivedAt}`,
+        });
+      } else if (!process.env.VERCEL) {
+        let list = [];
+        try { list = JSON.parse(await fs.readFile(MESSAGES_FILE, 'utf8')); } catch { /* first message */ }
+        list.push(entry);
+        await fs.writeFile(MESSAGES_FILE, JSON.stringify(list, null, 2));
+      } else {
+        return res.status(503).json({ ok: false, fallback: 'mailto', to: profile.email });
+      }
       recent.set(ip, now);
       console.log(`[contact] new message from ${entry.name} <${entry.email}>`);
       res.json({ ok: true });
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ ok: false, error: 'Something went wrong — please email me directly.' });
+      console.error('[contact]', err.message);
+      res.status(503).json({ ok: false, fallback: 'mailto', to: profile.email });
     }
   });
 

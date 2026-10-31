@@ -457,6 +457,14 @@
         });
         let json = {};
         try { json = await res.json(); } catch { /* non-JSON error page */ }
+        if (json.fallback === 'mailto' && json.to) {
+          // Server can't deliver it: hand the message to the visitor's own email app.
+          const subject = encodeURIComponent(`Website enquiry from ${name}`);
+          const bodyText = encodeURIComponent(`${message}\n\n${name}${data.company ? `\n${data.company}` : ''}`);
+          window.location.href = `mailto:${json.to}?subject=${subject}&body=${bodyText}`;
+          setStatus('Opening your email app so you can send this directly…', true);
+          return;
+        }
         if (!res.ok || !json.ok) {
           throw new Error(json.error || `Something went wrong (${res.status}). Please email me directly.`);
         }
