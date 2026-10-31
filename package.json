@@ -1,0 +1,29 @@
+{
+  "name": "umit-bozdag-website",
+  "version": "1.0.0",
+  "description": "Personal website of Umit Bozdag — exhibitions & events operations.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build:map": "node scripts/build-map.js"
+  },
+  "author": "Umit Bozdag",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "compression": "^1.8.2",
+    "ejs": "^3.1.10",
+    "express": "^4.22.3",
+    "helmet": "^8.3.0",
+    "nodemailer": "^6.10.1"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "d3-geo": "^3.1.1",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  }
+}

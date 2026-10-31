@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= p.name %> — <%= p.title %> · Exhibitions &amp; Events</title>
+  <meta name="description" content="<%= p.name %> — <%= p.title %> at <%= p.company %>. <%= p.tagline %>">
+  <meta property="og:title" content="<%= p.name %> — Exhibitions &amp; Events Operations">
+  <meta property="og:description" content="<%= p.tagline %>">
+  <meta name="theme-color" content="#07080c">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-loading">
+
+  <!-- Preloader: the show doors open -->
+  <div class="doors" aria-hidden="true">
+    <div class="door door--l"></div>
+    <div class="door door--r"></div>
+    <div class="doors__label">
+      <span class="mono">Doors open in</span>
+      <span class="doors__count">3</span>
+    </div>
+  </div>
+
+  <div class="cursor" aria-hidden="true"></div>
+  <div class="scroll-progress" aria-hidden="true"></div>
+
+  <header class="nav">
+    <a href="#top" class="nav__logo" aria-label="<%= p.name %> — home">
+      <span class="nav__mark">UB</span>
+      <span class="nav__name"><%= p.name %></span>
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#about">Profile</a>
+      <a href="#experience">Experience</a>
+      <a href="#world">World tour</a>
+      <a href="#expertise">Expertise</a>
+    </nav>
+    <a href="#contact" class="btn btn--small magnetic">Get in touch</a>
+    <button class="nav__burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero">
+      <canvas class="hero__canvas" aria-hidden="true"></canvas>
+      <div class="hero__grid" aria-hidden="true"></div>
+
+      <div class="hero__inner container">
+        <div class="hero__copy">
+          <p class="eyebrow reveal"><span class="live-dot"></span> Now: <%= p.title %> · <%= p.company %></p>
+          <h1 class="hero__title" aria-label="<%= p.name %>">
+            <span class="split" data-split><%= p.firstName %></span>
+            <span class="split split--outline" data-split><%= p.name.split(' ').slice(1).join(' ') %></span>
+          </h1>
+          <p class="hero__lead reveal"><%= p.tagline %></p>
+          <p class="hero__sub reveal">Exhibitions · Conferences · Trade shows · Live events</p>
+          <div class="hero__cta reveal">
+            <a href="#experience" class="btn magnetic">Explore the show <span class="btn__arrow">→</span></a>
+            <a href="<%= p.linkedin %>" class="btn btn--ghost magnetic" target="_blank" rel="noopener">Connect on LinkedIn</a>
+          </div>
+        </div>
+
+        <!-- Lanyard badge -->
+        <div class="badge-wrap" aria-hidden="true">
+          <div class="lanyard"></div>
+          <div class="badge" data-tilt>
+            <div class="badge__clip"></div>
+            <div class="badge__top">
+              <span class="mono">ALL ACCESS</span>
+              <span class="mono">2012 — <%= year %></span>
+            </div>
+            <div class="badge__body">
+              <div class="badge__avatar">UB</div>
+              <div class="badge__name"><%= p.name %></div>
+              <div class="badge__role"><%= p.title %></div>
+              <div class="badge__company"><%= p.company %> · London</div>
+            </div>
+            <div class="badge__foot">
+              <svg class="badge__qr" viewBox="0 0 21 21" shape-rendering="crispEdges">
+                <% let seed = 7; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+                   for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
+                     const finder = (a, b) => x >= a && x < a + 7 && y >= b && y < b + 7;
+                     let on;
+                     if (finder(0,0) || finder(14,0) || finder(0,14)) {
+                       const lx = x % 14 === x ? x : x - 14, ly = y % 14 === y ? y : y - 14;
+                       const r = Math.max(Math.abs(lx - 3), Math.abs(ly - 3));
+                       on = r !== 2;
+                     } else on = rnd() > 0.52; %>
+                  <% if (on) { %><rect x="<%= x %>" y="<%= y %>" width="1" height="1"/><% } %>
+                <% } %>
+              </svg>
+              <div class="badge__stand">
+                <span class="mono">HALL</span><strong>05</strong>
+                <span class="mono">STAND</span><strong>UB-01</strong>
+              </div>
+            </div>
+            <div class="badge__shine"></div>
+          </div>
+        </div>
+      </div>
+
+      <a href="#about" class="hero__scroll" aria-label="Scroll down"><span></span></a>
+    </section>
+
+    <!-- LED TICKER -->
+    <div class="ticker" aria-label="Selected events">
+      <div class="ticker__track">
+        <% for (let i = 0; i < 2; i++) { p.ticker.forEach(t => { %>
+          <span class="ticker__item"><%= t %></span><span class="ticker__sep">◆</span>
+        <% }) } %>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <section class="stats container">
+      <% p.stats.forEach((s, i) => { %>
+        <div class="stat reveal" style="--d:<%= i * 0.1 %>s">
+          <div class="stat__value"><span data-count="<%= s.value %>">0</span><span class="accent"><%= s.suffix %></span></div>
+          <div class="stat__label"><%= s.label %></div>
+        </div>
+      <% }) %>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about" class="about container section">
+      <div class="section__head">
+        <span class="section__num mono">01 / Profile</span>
+        <h2 class="section__title reveal">The operational backbone <em>behind the show floor.</em></h2>
+      </div>
+      <div class="about__grid">
+        <p class="about__intro reveal"><%= p.intro %></p>
+        <div class="about__card reveal">
+          <dl class="spec">
+            <div><dt class="mono">Current</dt><dd><%= p.title %>, <%= p.company %></dd></div>
+            <div><dt class="mono">Based</dt><dd><%= p.location %></dd></div>
+            <div><dt class="mono">Markets</dt><dd>UK · Europe · Asia · Americas · Africa</dd></div>
+            <div><dt class="mono">Languages</dt><dd><%= p.languages.join(' · ') %> — fluent</dd></div>
+            <div><dt class="mono">Certified</dt><dd>IOSH · Cisco CCNA</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPERIENCE -->
+    <section id="experience" class="experience section">
+      <div class="container">
+        <div class="section__head">
+          <span class="section__num mono">02 / Experience</span>
+          <h2 class="section__title reveal">Walk the halls. <em>Five stands, fourteen years.</em></h2>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline__rail"><div class="timeline__fill"></div></div>
+          <% p.experience.forEach((job, i) => { %>
+            <article class="job reveal<%= job.current ? ' job--current' : '' %>">
+              <div class="job__marker"><span></span></div>
+              <div class="job__meta">
+                <span class="job__hall mono"><%= job.hall %></span>
+                <span class="job__period"><%= job.period %></span>
+                <% if (job.current) { %><span class="chip chip--live"><span class="live-dot"></span> Current</span><% } %>
+              </div>
+              <div class="job__card spotlight">
+                <h3 class="job__role"><%= job.role %></h3>
+                <p class="job__company"><%= job.company %> <span>· <%= job.place %></span></p>
+                <p class="job__summary"><%= job.summary %></p>
+                <ul class="job__points">
+                  <% job.points.forEach(pt => { %><li><%= pt %></li><% }) %>
+                </ul>
+                <% if (job.events.length) { %>
+                  <div class="job__events">
+                    <span class="mono job__events-label">Managed events</span>
+                    <div class="job__event-list">
+                      <% job.events.forEach(ev => { %>
+                        <div class="event-pill">
+                          <strong><%= ev.name %></strong>
+                          <% if (ev.note) { %><span><%= ev.note %></span><% } %>
+                        </div>
+                      <% }) %>
+                    </div>
+                  </div>
+                <% } %>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORLD MAP -->
+    <section id="world" class="world section">
+      <div class="container">
+        <div class="section__head">
+          <span class="section__num mono">03 / World tour</span>
+          <h2 class="section__title reveal">From London <em>to the world’s biggest venues.</em></h2>
+        </div>
+        <div class="map reveal">
+          <svg class="map__svg" viewBox="0 0 <%= map.width %> <%= map.height %>" role="img" aria-label="World map of event locations">
+            <defs>
+              <radialGradient id="glow"><stop offset="0" stop-color="#ff6a2b" stop-opacity=".9"/><stop offset="1" stop-color="#ff6a2b" stop-opacity="0"/></radialGradient>
+            </defs>
+            <g class="map__dots">
+              <% map.dots.forEach(d => { %><circle cx="<%= d[0] %>" cy="<%= d[1] %>" r="2.1"/><% }) %>
+            </g>
+            <% const hq = map.cities.find(c => c.hq); %>
+            <g class="map__routes">
+              <% map.cities.filter(c => !c.hq).forEach((c, i) => {
+                   const mx = (hq.x + c.x) / 2, my = Math.min(hq.y, c.y) - Math.hypot(c.x - hq.x, c.y - hq.y) * 0.35; %>
+                <path d="M<%= hq.x %>,<%= hq.y %> Q<%= mx.toFixed(1) %>,<%= my.toFixed(1) %> <%= c.x %>,<%= c.y %>" style="--i:<%= i %>"/>
+              <% }) %>
+            </g>
+            <g class="map__cities">
+              <% map.cities.forEach((c, i) => { %>
+                <g class="city<%= c.hq ? ' city--hq' : '' %>" style="--i:<%= i %>" transform="translate(<%= c.x %>,<%= c.y %>)">
+                  <circle class="city__glow" r="18" fill="url(#glow)"/>
+                  <circle class="city__pulse" r="5"/>
+                  <circle class="city__dot" r="4"/>
+                </g>
+              <% }) %>
+            </g>
+          </svg>
+          <div class="map__labels">
+            <% map.cities.forEach((c, i) => { %>
+              <span class="map__label<%= c.hq ? ' map__label--hq' : '' %><%= (c.label || '').split(' ').filter(Boolean).map(l => ' map__label--' + l).join('') %>" style="left:<%= (c.x / map.width * 100).toFixed(2) %>%;top:<%= (c.y / map.height * 100).toFixed(2) %>%;--i:<%= i %>"><%= c.name %></span>
+            <% }) %>
+          </div>
+        </div>
+        <p class="map__caption mono">Shows delivered or supported across <span class="accent">5 continents</span> — London, Birmingham, Milan, Istanbul, New Delhi, Rotterdam, Houston, Cape Town &amp; Dublin.</p>
+      </div>
+    </section>
+
+    <!-- EXPERTISE -->
+    <section id="expertise" class="expertise section">
+      <div class="container">
+        <div class="section__head">
+          <span class="section__num mono">04 / Expertise</span>
+          <h2 class="section__title reveal">What I bring <em>to every build.</em></h2>
+        </div>
+        <div class="stands">
+          <% const icons = {
+            plan: '<path d="M3 3h18v18H3z"/><path d="M3 9h18M9 9v12M15 15h6"/>',
+            deal: '<path d="M4 12l4-4 4 3 4-4 4 4"/><path d="M4 17h16"/>',
+            budget: '<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.7 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2"/>',
+            shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+            star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+            ai: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/><path d="M9.5 14.5l1.5-5 1.5 5M10 13h2M15 9.5v5"/>'
+          }; %>
+          <% p.expertise.forEach((e, i) => { %>
+            <div class="stand spotlight reveal" data-tilt style="--d:<%= (i % 3) * 0.08 %>s">
+              <span class="stand__no mono">Stand <%= String.fromCharCode(65 + i) %><%= i + 1 %></span>
+              <svg class="stand__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><%- icons[e.icon] %></svg>
+              <h3><%= e.title %></h3>
+              <p><%= e.text %></p>
+            </div>
+          <% }) %>
+        </div>
+
+        <div class="creds">
+          <% p.credentials.forEach((c, i) => { %>
+            <div class="cred reveal" style="--d:<%= i * 0.06 %>s">
+              <strong><%= c.title %></strong><span><%= c.text %></span>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="contact section">
+      <div class="container contact__grid">
+        <div>
+          <span class="section__num mono">05 / Registration desk</span>
+          <h2 class="section__title reveal">Planning a show? <em>Let’s talk.</em></h2>
+          <p class="contact__lead reveal">Open to conversations about exhibitions, conferences, operations leadership and the tools that make events run better.</p>
+          <ul class="contact__links reveal">
+            <li><span class="mono">Email</span><a href="mailto:<%= p.email %>"><%= p.email %></a></li>
+            <% if (p.phone) { %><li><span class="mono">Phone</span><a href="tel:<%= p.phone.replace(/[^+\d]/g, '') %>"><%= p.phone %></a></li><% } %>
+            <li><span class="mono">LinkedIn</span><a href="<%= p.linkedin %>" target="_blank" rel="noopener">in/umit-bozdag</a></li>
+            <li><span class="mono">Based</span><span><%= p.location %></span></li>
+          </ul>
+        </div>
+
+        <form class="regform reveal" novalidate>
+          <div class="regform__head">
+            <span class="mono">Visitor registration</span>
+            <span class="mono regform__no">#<%= String(Math.floor(Math.random() * 90000) + 10000) %></span>
+          </div>
+          <label class="field"><input name="name" required placeholder=" " autocomplete="name"><span>Your name</span></label>
+          <label class="field"><input name="email" type="email" required placeholder=" " autocomplete="email"><span>Email</span></label>
+          <label class="field"><input name="company" placeholder=" " autocomplete="organization"><span>Company (optional)</span></label>
+          <label class="field"><textarea name="message" rows="4" required placeholder=" "></textarea><span>How can I help?</span></label>
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn btn--block magnetic" type="submit"><span class="btn__label">Print my badge &amp; send</span> <span class="btn__arrow">→</span></button>
+          <p class="regform__status" role="status" aria-live="polite"></p>
+
+          <div class="printed" aria-hidden="true">
+            <div class="printed__badge">
+              <span class="mono">VISITOR</span>
+              <strong class="printed__name">Thanks!</strong>
+              <span>Message received — I’ll be in touch shortly.</span>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>© <%= year %> <%= p.name %></span>
+      <a href="<%= p.linkedin %>" class="footer__li" target="_blank" rel="noopener" aria-label="Umit Bozdag on LinkedIn">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+        Connect on LinkedIn
+      </a>
+      <span class="mono">Show closed. Thanks for visiting.</span>
+      <a href="#top" class="footer__top">Back to entrance ↑</a>
+    </div>
+  </footer>
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>
