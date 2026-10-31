@@ -6,3 +6,4 @@ npm-debug.log*
 
 screenshots/
 public/video/*.part
+data/visits.json

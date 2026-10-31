@@ -347,6 +347,34 @@
     if (done) done.addEventListener('click', () => { form.classList.remove('is-sent'); setStatus(''); });
   }
 
+  /* ---------- Visitor-record consent wall ---------- */
+  function consent() {
+    const el = $('.consent');
+    if (!el) return;
+    const KEY = 'ub-consent';
+    let state = null;
+    try { state = localStorage.getItem(KEY); } catch { /* storage blocked */ }
+    const logVisit = () => {
+      try { if (sessionStorage.getItem('ub-visit')) return; sessionStorage.setItem('ub-visit', '1'); } catch { /* ignore */ }
+      fetch('/api/visit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+        body: JSON.stringify({ page: location.pathname, referrer: document.referrer }) }).catch(() => {});
+    };
+    if (state === 'yes') { el.remove(); logVisit(); return; }
+    el.hidden = false;
+    body.classList.add('consent-pending');
+    const agree = $('[data-consent="agree"]', el), decline = $('[data-consent="decline"]', el), back = $('[data-consent="back"]', el);
+    if (agree) agree.addEventListener('click', () => {
+      try { localStorage.setItem(KEY, 'yes'); } catch { /* ignore */ }
+      body.classList.remove('consent-pending');
+      el.classList.add('is-closing');
+      setTimeout(() => el.remove(), 400);
+      logVisit();
+    });
+    if (decline) decline.addEventListener('click', () => el.classList.add('is-declined'));
+    if (back) back.addEventListener('click', () => el.classList.remove('is-declined'));
+    setTimeout(() => { if (agree) agree.focus(); }, 600);
+  }
+
   /* ---------- Boot ---------- */
   const init = () => {
     clock();
@@ -361,6 +389,7 @@
     imageFallbacks();
     contactForm();
     intro();
+    consent();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
