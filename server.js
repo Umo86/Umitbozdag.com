@@ -9,6 +9,7 @@ const store = require('./lib/store');
 const { buildWorldMap } = require('./lib/worldmap');
 
 const PORT = process.env.PORT || 3000;
+const ADMIN_PATH = '/' + String(process.env.ADMIN_PATH || '/gs').replace(/^\/+|\/+$/g, ''); // admin panel entrance
 const MESSAGES_FILE = path.join(store.DATA_DIR, 'messages.json');
 const VISITS_FILE = path.join(store.DATA_DIR, 'visits.json');
 const LOCAL_VIDEOS = ['london.mp4', 'london.webm'].map((f) => path.join(__dirname, 'public', 'video', f));
@@ -232,8 +233,9 @@ async function start() {
   });
   app.get('/privacy', (req, res) => res.render('privacy', { p: store.get(), year: year() }));
 
-  // ---- Admin panel: /admin ----
-  app.use('/admin', require('./lib/admin')({ store, visitsFile: VISITS_FILE, messagesFile: MESSAGES_FILE, findLogos }));
+  // ---- Admin panel (default /gs; set ADMIN_PATH to move it) ----
+  app.use(ADMIN_PATH, require('./lib/admin')({ store, visitsFile: VISITS_FILE, messagesFile: MESSAGES_FILE, findLogos, basePath: ADMIN_PATH }));
+  console.log(`[admin] panel at ${ADMIN_PATH}`);
 
   app.use((req, res) => res.status(404).render('404', { p: store.get() }));
 

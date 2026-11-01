@@ -63,12 +63,12 @@ London skyline plays behind the name instead.
 
 ## Admin panel
 
-Sign in at **`/admin`** to edit everything without touching code: events (with logo and photo
+Sign in at **`/gs`** (change the address with an `ADMIN_PATH` variable) to edit everything without touching code: events (with logo and photo
 uploads), organisers, the "Who I am" text, facts, numbers, services, skills, career history, map
 cities, the header video, contact details, plus a visitor log, saved contact messages and
 backup / restore.
 
-- **Password.** Set `ADMIN_PASSWORD` in the host's environment variables, or simply open `/admin`
+- **Password.** Set `ADMIN_PASSWORD` in the host's environment variables, or simply open `/gs`
   on a server with a writable data folder and choose a password on first visit (stored hashed in
   `data/admin.json`; change it under *Backup & settings*). Optionally set `SESSION_SECRET` so
   sign-ins survive restarts.

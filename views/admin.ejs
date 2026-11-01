@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="stylesheet" href="<%= base %>/assets/admin.css">
 </head>
-<body class="adm" data-password-mode="<%= passwordMode %>">
+<body class="adm" data-password-mode="<%= passwordMode %>" data-base="<%= base %>">
   <aside class="side" id="side">
     <div class="brand"><span class="mark">UB</span><div><strong><%= p.name %></strong><span>Site admin</span></div></div>
     <nav class="side__nav" aria-label="Admin sections">
@@ -41,7 +41,7 @@
     </nav>
     <div class="side__foot">
       <a href="/" target="_blank" rel="noopener">View site ↗</a>
-      <form method="post" action="/admin/logout"><button type="submit" class="linkbtn">Log out</button></form>
+      <form method="post" action="<%= base %>/logout"><button type="submit" class="linkbtn">Log out</button></form>
     </div>
   </aside>
   <div class="side__scrim" data-close-side></div>
@@ -59,6 +59,6 @@
     <div class="view" id="view"></div>
   </main>
   <div class="toast" data-toast role="status" aria-live="polite"></div>
-  <script src="/admin/admin.js" defer></script>
+  <script src="<%= base %>/assets/admin.js" defer></script>
 </body>
 </html>

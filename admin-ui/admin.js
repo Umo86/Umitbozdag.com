@@ -1,6 +1,7 @@
-/* Admin panel app: hash-routed views over /admin/api. Vanilla JS, no build step. */
+/* Admin panel app: hash-routed views over <base>/api (base path comes from data-base on <body>). Vanilla JS, no build step. */
 (() => {
   'use strict';
+  const BASE = document.body.dataset.base || '/gs';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -14,7 +15,7 @@
   /* ---------- API ---------- */
   async function api(method, url, body) {
     const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' }, body: body === undefined ? undefined : JSON.stringify(body) });
-    if (r.status === 401) { location.href = '/admin/login'; throw new Error('Signed out'); }
+    if (r.status === 401) { location.href = `${BASE}/login`; throw new Error('Signed out'); }
     const j = await r.json().catch(() => ({}));
     if (!r.ok || j.ok === false) throw new Error(j.error || `Request failed (${r.status})`);
     return j;
@@ -28,7 +29,7 @@
     $$('[data-count]').forEach((el) => { const n = counts[el.dataset.count]; el.textContent = n ? String(n) : ''; });
     if (status) { statusEl.textContent = status.lastError ? 'Save failed' : status.lastSaved ? `Saved ${new Date(status.lastSaved).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : status.temporary ? 'Temporary storage' : 'Ready'; statusEl.className = `top__status${status.lastError ? ' is-bad' : ''}`; }
   };
-  const save = async (patch) => absorb(await api('PATCH', '/admin/api/content', { patch }));
+  const save = async (patch) => absorb(await api('PATCH', `${BASE}/api/content`, { patch }));
   const getPath = (o, p) => p.split('.').reduce((x, k) => (x == null ? undefined : x[k]), o);
   const setPath = (o, p, v) => { const ks = p.split('.'); let x = o; ks.slice(0, -1).forEach((k) => { if (typeof x[k] !== 'object' || x[k] === null) x[k] = {}; x = x[k]; }); x[ks[ks.length - 1]] = v; };
   const orgName = (id) => ((content.employers || []).find((e) => e.id === id) || {}).name || id || '';
@@ -115,7 +116,7 @@
   }
   async function uploadFile(file, kind) {
     const { data, name } = await prepareUpload(file, kind);
-    return api('POST', '/admin/api/upload', { name, data, kind });
+    return api('POST', `${BASE}/api/upload`, { name, data, kind });
   }
   function wireImagePickers(root) {
     $$('.imgpick', root).forEach((box) => {
@@ -133,7 +134,7 @@
   }
   function pickExisting(kind) {
     return new Promise((resolve) => {
-      api('GET', '/admin/api/media').then((j) => {
+      api('GET', `${BASE}/api/media`).then((j) => {
         const items = kind === 'logo' ? [...j.uploads.logos, ...j.builtin.logos] : [...j.uploads.images, ...j.builtin.scenes, ...j.uploads.logos];
         const modal = document.createElement('div');
         modal.className = 'modal';
@@ -208,7 +209,7 @@
   /* ---------- dashboard ---------- */
   async function renderDashboard() {
     let visits = [];
-    try { visits = (await api('GET', '/admin/api/visits')).visits || []; } catch { /* fine */ }
+    try { visits = (await api('GET', `${BASE}/api/visits`)).visits || []; } catch { /* fine */ }
     const day = 864e5, now = Date.now();
     const last7 = visits.filter((v) => now - Date.parse(v.at) < 7 * day).length;
     const today = visits.filter((v) => now - Date.parse(v.at) < day).length;
@@ -227,14 +228,14 @@
         <div class="tile"><span>Contact form</span><strong style="font-size:1.1rem">${counts.messages ? 'Saving to file' : 'See README'}</strong><span>Emails go out when SMTP is set</span></div>
         <div class="tile"><span>Public site</span><strong style="font-size:1.1rem"><a href="/" target="_blank" rel="noopener">Open ↗</a></strong><span>${esc(content.name)} · ${esc(content.title)}</span></div>
       </div>
-      <div class="card"><div class="card__head"><h2>Quick actions</h2></div><div class="quick"><a class="btn" href="#shows" data-quick-add>+ Add an event</a><a class="btn btn--ghost" href="#media">Upload photos</a><a class="btn btn--ghost" href="#profile">Edit “Who I am”</a><a class="btn btn--ghost" href="/admin/api/export">Download backup</a></div></div>
+      <div class="card"><div class="card__head"><h2>Quick actions</h2></div><div class="quick"><a class="btn" href="#shows" data-quick-add>+ Add an event</a><a class="btn btn--ghost" href="#media">Upload photos</a><a class="btn btn--ghost" href="#profile">Edit “Who I am”</a><a class="btn btn--ghost" href="${BASE}/api/export">Download backup</a></div></div>
       <div class="card"><div class="card__head"><h2>Latest visitors</h2><a class="linkbtn" href="#visitors">All visitors →</a></div>${visits.length ? `<div class="tablewrap"><table class="table"><thead><tr><th>When</th><th>Where</th><th>Browser</th><th>Page</th></tr></thead><tbody>${visits.slice(-8).reverse().map((v) => `<tr><td>${esc(fmtDate(v.at))}</td><td>${esc([v.city, v.country].filter(Boolean).join(', ') || '—')}</td><td>${esc([v.browser, v.os, v.device].filter(Boolean).join(' · '))}</td><td class="mono">${esc(v.page || '/')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">No visits recorded yet.</p>'}</div>`;
     $('[data-quick-add]', view).addEventListener('click', () => setTimeout(() => { const b = $('[data-add]', view); if (b) b.click(); }, 50));
   }
 
   /* ---------- media ---------- */
   async function renderMedia() {
-    const j = await api('GET', '/admin/api/media');
+    const j = await api('GET', `${BASE}/api/media`);
     const grid = (items, deletable) => (items.length ? `<div class="mediagrid">${items.map((m) => `<div class="media"><img src="${esc(m.url)}" alt="" loading="lazy"><span>${esc(m.name)} · ${fmtBytes(m.bytes)}</span><div class="media__ctl"><button type="button" class="btn btn--small btn--ghost" data-copy="${esc(m.url)}">Copy link</button>${deletable ? `<button type="button" class="btn btn--small btn--danger" data-delfile="${esc(m.url)}">Delete</button>` : ''}</div></div>`).join('')}</div>` : '<p class="empty">Nothing uploaded yet.</p>');
     view.innerHTML = `
       <div class="card"><div class="card__head"><h2>Upload</h2><div class="quick"><label class="btn">Upload photos… <input type="file" accept="image/*" multiple hidden data-up="image"></label><label class="btn btn--ghost">Upload logos… <input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" multiple hidden data-up="logo"></label></div></div><p class="hint">Photos are shrunk to 1800px before upload; logos to 900px. You can then pick them from any “Choose existing” button, or copy the link.</p></div>
@@ -257,7 +258,7 @@
 
   /* ---------- visitors ---------- */
   async function renderVisitors() {
-    const { visits = [] } = await api('GET', '/admin/api/visits');
+    const { visits = [] } = await api('GET', `${BASE}/api/visits`);
     const day = 864e5, now = Date.now();
     const tally = (key) => { const m = new Map(); visits.forEach((v) => { const k = v[key] || 'Unknown'; m.set(k, (m.get(k) || 0) + 1); }); return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8); };
     const bars = (rows) => { const max = Math.max(1, ...rows.map((r) => r[1])); return `<div class="bars">${rows.map(([k, n]) => `<div class="bar"><span>${esc(k)}</span><i style="width:${Math.round((n / max) * 100)}%"></i><b>${n}</b></div>`).join('') || '<p class="empty">No data yet.</p>'}</div>`; };
@@ -272,16 +273,16 @@
       const csv = [cols.join(','), ...visits.map((v) => cols.map((c) => `"${String(v[c] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `visits-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     });
-    $('[data-clear]', view).addEventListener('click', async () => { if (!confirm('Delete the whole visitor log?')) return; try { await api('POST', '/admin/api/visits/clear', {}); toast('Log cleared'); absorb(await api('GET', '/admin/api/status')); renderVisitors(); } catch (e) { toast(e.message, 'error'); } });
+    $('[data-clear]', view).addEventListener('click', async () => { if (!confirm('Delete the whole visitor log?')) return; try { await api('POST', `${BASE}/api/visits/clear`, {}); toast('Log cleared'); absorb(await api('GET', `${BASE}/api/status`)); renderVisitors(); } catch (e) { toast(e.message, 'error'); } });
   }
 
   /* ---------- messages ---------- */
   async function renderMessages() {
-    const { messages = [] } = await api('GET', '/admin/api/messages');
+    const { messages = [] } = await api('GET', `${BASE}/api/messages`);
     view.innerHTML = `<div class="card"><div class="card__head"><h2>Contact form messages<span class="count">${messages.length}</span></h2>${messages.length ? '<button type="button" class="btn btn--danger btn--small" data-clear>Clear all</button>' : ''}</div><p class="hint">Messages are saved here when email (SMTP) isn’t configured. With SMTP set up they are emailed to you instead and won’t appear in this list.</p>
       ${messages.length ? `<div class="rows">${[...messages].reverse().map((m) => `<div class="msg"><header><strong>${esc(m.name)} &lt;${esc(m.email)}&gt;${m.company ? ` · ${esc(m.company)}` : ''}</strong><span class="mono">${esc(fmtDate(m.receivedAt))}</span></header><p>${esc(m.message)}</p><div class="actions"><a class="btn btn--small btn--ghost" href="mailto:${esc(m.email)}?subject=Re:%20your%20message%20on%20umitbozdag.com">Reply by email</a></div></div>`).join('')}</div>` : '<p class="empty">No messages saved.</p>'}</div>`;
     const clear = $('[data-clear]', view);
-    if (clear) clear.addEventListener('click', async () => { if (!confirm('Delete all saved messages?')) return; try { await api('POST', '/admin/api/messages/clear', {}); toast('Cleared'); absorb(await api('GET', '/admin/api/status')); renderMessages(); } catch (e) { toast(e.message, 'error'); } });
+    if (clear) clear.addEventListener('click', async () => { if (!confirm('Delete all saved messages?')) return; try { await api('POST', `${BASE}/api/messages/clear`, {}); toast('Cleared'); absorb(await api('GET', `${BASE}/api/status`)); renderMessages(); } catch (e) { toast(e.message, 'error'); } });
   }
 
   /* ---------- settings: backup, restore, raw JSON, password ---------- */
@@ -289,21 +290,21 @@
     const st = status || {};
     view.innerHTML = `
       <div class="card"><div class="card__head"><h2>Storage</h2></div><table class="table"><tbody><tr><th>Content file</th><td class="mono">${esc(st.contentFile || '')}</td></tr><tr><th>Loaded from</th><td class="mono">${esc(st.loadedFrom || '')}</td></tr><tr><th>Uploads folder</th><td class="mono">${esc(st.uploadDir || '')}</td></tr><tr><th>Writable</th><td>${st.writable ? 'Yes' : 'No'}${st.temporary ? ' (temporary — this host forgets files on restart)' : ''}</td></tr><tr><th>Last saved</th><td>${st.lastSaved ? esc(fmtDate(st.lastSaved)) : 'Not yet'}</td></tr>${st.lastError ? `<tr><th>Last error</th><td style="color:var(--bad)">${esc(st.lastError)}</td></tr>` : ''}</tbody></table></div>
-      <div class="card"><div class="card__head"><h2>Backup &amp; restore</h2></div><p class="hint">Download a copy of everything you have entered (events, text, settings) as a JSON file. Restore it later on this or another server. Uploaded photos are separate — back up the uploads folder too.</p><div class="actions"><a class="btn" href="/admin/api/export">Download backup</a><label class="btn btn--ghost">Restore from file… <input type="file" accept="application/json,.json" hidden data-import></label><span class="spacer"></span><button type="button" class="btn btn--danger" data-reset>Reset to built-in content</button></div></div>
+      <div class="card"><div class="card__head"><h2>Backup &amp; restore</h2></div><p class="hint">Download a copy of everything you have entered (events, text, settings) as a JSON file. Restore it later on this or another server. Uploaded photos are separate — back up the uploads folder too.</p><div class="actions"><a class="btn" href="${BASE}/api/export">Download backup</a><label class="btn btn--ghost">Restore from file… <input type="file" accept="application/json,.json" hidden data-import></label><span class="spacer"></span><button type="button" class="btn btn--danger" data-reset>Reset to built-in content</button></div></div>
       ${passwordMode === 'env' ? '<div class="card"><div class="card__head"><h2>Password</h2></div><p class="hint">On this host the password is set by the <code>ADMIN_PASSWORD</code> environment variable. Change it in the hosting control panel.</p></div>' : `<div class="card"><form class="form" data-pw><div class="card__head field--wide"><h2>Change password</h2></div><label class="field"><span>Current password</span><input type="password" name="current" autocomplete="current-password" required></label><label class="field"><span>New password (10+ characters)</span><input type="password" name="password" minlength="10" autocomplete="new-password" required></label><div class="actions"><button class="btn" type="submit">Update password</button></div></form></div>`}
       <div class="card"><div class="card__head"><h2>Advanced: edit everything as JSON</h2></div><p class="hint">For anything the forms don’t cover. Invalid JSON or missing required fields are rejected, so you can’t break the site by accident.</p><form data-raw><textarea class="json field" data-raw-text spellcheck="false">${esc(JSON.stringify(content, null, 2))}</textarea><div class="actions"><button class="btn" type="submit">Save JSON</button><button class="btn btn--ghost" type="button" data-pretty>Re-format</button></div></form></div>`;
     $('[data-import]', view).addEventListener('change', async (e) => {
       const f = e.target.files[0]; if (!f) return;
-      try { const text = await f.text(); const parsed = JSON.parse(text); if (!confirm('Replace all current content with this backup?')) return; absorb(await api('POST', '/admin/api/import', { content: parsed })); toast('Backup restored'); renderSettings(); }
+      try { const text = await f.text(); const parsed = JSON.parse(text); if (!confirm('Replace all current content with this backup?')) return; absorb(await api('POST', `${BASE}/api/import`, { content: parsed })); toast('Backup restored'); renderSettings(); }
       catch (err) { toast(err.message, 'error'); }
       e.target.value = '';
     });
-    $('[data-reset]', view).addEventListener('click', async () => { if (!confirm('Throw away all changes made in this admin and go back to the built-in content? Download a backup first if unsure.')) return; try { absorb(await api('POST', '/admin/api/reset', {})); toast('Reset to built-in content'); renderSettings(); } catch (e) { toast(e.message, 'error'); } });
+    $('[data-reset]', view).addEventListener('click', async () => { if (!confirm('Throw away all changes made in this admin and go back to the built-in content? Download a backup first if unsure.')) return; try { absorb(await api('POST', `${BASE}/api/reset`, {})); toast('Reset to built-in content'); renderSettings(); } catch (e) { toast(e.message, 'error'); } });
     const pw = $('[data-pw]', view);
-    if (pw) pw.addEventListener('submit', async (e) => { e.preventDefault(); try { await api('POST', '/admin/api/password', { current: pw.current.value, password: pw.password.value }); toast('Password updated'); pw.reset(); } catch (err) { toast(err.message, 'error'); } });
+    if (pw) pw.addEventListener('submit', async (e) => { e.preventDefault(); try { await api('POST', `${BASE}/api/password`, { current: pw.current.value, password: pw.password.value }); toast('Password updated'); pw.reset(); } catch (err) { toast(err.message, 'error'); } });
     const raw = $('[data-raw]', view), ta = $('[data-raw-text]', view);
     $('[data-pretty]', view).addEventListener('click', () => { try { ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); } catch (err) { toast(`Not valid JSON: ${err.message}`, 'error'); } });
-    raw.addEventListener('submit', async (e) => { e.preventDefault(); let parsed; try { parsed = JSON.parse(ta.value); } catch (err) { toast(`Not valid JSON: ${err.message}`, 'error'); return; } try { absorb(await api('PUT', '/admin/api/content', { content: parsed })); toast('Saved'); ta.value = JSON.stringify(content, null, 2); } catch (err) { toast(err.message, 'error'); } });
+    raw.addEventListener('submit', async (e) => { e.preventDefault(); let parsed; try { parsed = JSON.parse(ta.value); } catch (err) { toast(`Not valid JSON: ${err.message}`, 'error'); return; } try { absorb(await api('PUT', `${BASE}/api/content`, { content: parsed })); toast('Saved'); ta.value = JSON.stringify(content, null, 2); } catch (err) { toast(err.message, 'error'); } });
   }
 
   /* ---------- routing ---------- */
@@ -326,5 +327,5 @@
   $('[data-open-side]').addEventListener('click', () => document.body.classList.add('side-open'));
   $('[data-close-side]').addEventListener('click', () => document.body.classList.remove('side-open'));
   window.addEventListener('hashchange', route);
-  api('GET', '/admin/api/content').then((j) => { absorb(j); route(); }).catch((e) => { view.innerHTML = `<div class="banner banner--warn">${esc(e.message)}</div>`; });
+  api('GET', `${BASE}/api/content`).then((j) => { absorb(j); route(); }).catch((e) => { view.innerHTML = `<div class="banner banner--warn">${esc(e.message)}</div>`; });
 })();

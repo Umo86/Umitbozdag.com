@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="stylesheet" href="<%= base %>/assets/admin.css">
 </head>
 <body class="login">
   <main class="login__card">
@@ -21,7 +21,7 @@
       <h1>Choose your admin password</h1>
       <p>First visit — pick a password of at least 10 characters. You’ll use it to sign in from now on.</p>
       <% if (error) { %><p class="login__error" role="alert"><%= error %></p><% } %>
-      <form method="post" action="/admin/setup">
+      <form method="post" action="<%= base %>/setup">
         <label>Password<input type="password" name="password" minlength="10" required autocomplete="new-password" autofocus></label>
         <label>Repeat password<input type="password" name="again" minlength="10" required autocomplete="new-password"></label>
         <button class="btn" type="submit">Save password &amp; sign in</button>
@@ -29,7 +29,7 @@
     <% } else { %>
       <h1>Sign in</h1>
       <% if (error) { %><p class="login__error" role="alert"><%= error %></p><% } %>
-      <form method="post" action="/admin/login">
+      <form method="post" action="<%= base %>/login">
         <label>Password<input type="password" name="password" required autocomplete="current-password" autofocus></label>
         <button class="btn" type="submit">Sign in</button>
       </form>
