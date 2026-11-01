@@ -17,6 +17,7 @@
     const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' }, body: body === undefined ? undefined : JSON.stringify(body) });
     if (r.status === 401) { location.href = `${BASE}/login`; throw new Error('Signed out'); }
     const j = await r.json().catch(() => ({}));
+    if (r.status === 409) { try { absorb(await (await fetch(`${BASE}/api/content`, { headers: { 'X-Requested-With': 'fetch' } })).json()); } catch { /* ignore */ } }
     if (!r.ok || j.ok === false) throw new Error(j.error || `Request failed (${r.status})`);
     return j;
   }
@@ -29,7 +30,8 @@
     $$('[data-count]').forEach((el) => { const n = counts[el.dataset.count]; el.textContent = n ? String(n) : ''; });
     if (status) { statusEl.textContent = status.lastError ? 'Save failed' : status.lastSaved ? `Saved ${new Date(status.lastSaved).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : status.temporary ? 'Temporary storage' : 'Ready'; statusEl.className = `top__status${status.lastError ? ' is-bad' : ''}`; }
   };
-  const save = async (patch) => absorb(await api('PATCH', `${BASE}/api/content`, { patch }));
+  const version = () => (status ? status.version : undefined);
+  const save = async (patch) => absorb(await api('PATCH', `${BASE}/api/content`, { patch, version: version() }));
   const getPath = (o, p) => p.split('.').reduce((x, k) => (x == null ? undefined : x[k]), o);
   const setPath = (o, p, v) => { const ks = p.split('.'); let x = o; ks.slice(0, -1).forEach((k) => { if (typeof x[k] !== 'object' || x[k] === null) x[k] = {}; x = x[k]; }); x[ks[ks.length - 1]] = v; };
   const orgName = (id) => ((content.employers || []).find((e) => e.id === id) || {}).name || id || '';
@@ -187,7 +189,12 @@
     formEl.addEventListener('submit', async (e) => {
       e.preventDefault();
       const next = readForm(formEl, item);
-      if ('id' in next && !next.id) next.id = slug(next.name);
+      if ('id' in next) {
+        const base = slug(next.id || next.name) || 'item'; let id = base, n = 2;
+        const taken = new Set((content[sec.key] || []).filter((_, i) => i !== index).map((x) => x.id));
+        while (taken.has(id)) id = `${base}-${n++}`;
+        next.id = id;
+      }
       if (!String(next.name || next.label || next.title || next.role || next.quote || '').trim()) { toast('Please give it a name.', 'error'); return; }
       const list = [...(content[sec.key] || [])];
       if (index < 0) list.unshift(next); else list[index] = next;
@@ -237,22 +244,22 @@
   async function renderMedia() {
     const j = await api('GET', `${BASE}/api/media`);
     const grid = (items, deletable) => (items.length ? `<div class="mediagrid">${items.map((m) => `<div class="media"><img src="${esc(m.url)}" alt="" loading="lazy"><span>${esc(m.name)} · ${fmtBytes(m.bytes)}</span><div class="media__ctl"><button type="button" class="btn btn--small btn--ghost" data-copy="${esc(m.url)}">Copy link</button>${deletable ? `<button type="button" class="btn btn--small btn--danger" data-delfile="${esc(m.url)}">Delete</button>` : ''}</div></div>`).join('')}</div>` : '<p class="empty">Nothing uploaded yet.</p>');
-    view.innerHTML = `
+    view.innerHTML = `<div data-media-root>
       <div class="card"><div class="card__head"><h2>Upload</h2><div class="quick"><label class="btn">Upload photos… <input type="file" accept="image/*" multiple hidden data-up="image"></label><label class="btn btn--ghost">Upload logos… <input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" multiple hidden data-up="logo"></label></div></div><p class="hint">Photos are shrunk to 1800px before upload; logos to 900px. You can then pick them from any “Choose existing” button, or copy the link.</p></div>
       <div class="card"><div class="card__head"><h2>Uploaded photos<span class="count">${j.uploads.images.length}</span></h2></div>${grid(j.uploads.images, true)}</div>
       <div class="card"><div class="card__head"><h2>Uploaded logos<span class="count">${j.uploads.logos.length}</span></h2></div>${grid(j.uploads.logos, true)}</div>
       <div class="card"><div class="card__head"><h2>Built-in logos<span class="count">${j.builtin.logos.length}</span></h2></div><p class="hint">These ship with the site (public/img/logos). Events use them automatically by slug; upload a new logo on the event to replace one.</p>${grid(j.builtin.logos, false)}</div>
-      <div class="card"><div class="card__head"><h2>Built-in illustrations<span class="count">${j.builtin.scenes.length}</span></h2></div>${grid(j.builtin.scenes, false)}</div>`;
+      <div class="card"><div class="card__head"><h2>Built-in illustrations<span class="count">${j.builtin.scenes.length}</span></h2></div>${grid(j.builtin.scenes, false)}</div></div>`;
     $$('[data-up]', view).forEach((input) => input.addEventListener('change', async () => {
       const files = [...input.files]; let ok = 0;
       for (const f of files) { try { await uploadFile(f, input.dataset.up); ok++; } catch (e) { toast(`${f.name}: ${e.message}`, 'error'); } }
       if (ok) { toast(`Uploaded ${ok} file${ok === 1 ? '' : 's'}`); renderMedia(); }
       input.value = '';
     }));
-    view.addEventListener('click', async (e) => {
+    $('[data-media-root]', view).addEventListener('click', async (e) => {
       const copy = e.target.closest('[data-copy]'); const del = e.target.closest('[data-delfile]');
       if (copy) { try { await navigator.clipboard.writeText(location.origin + copy.dataset.copy); toast('Link copied'); } catch { prompt('Copy this link:', location.origin + copy.dataset.copy); } }
-      if (del && confirm('Delete this file? Anything still using it will show a broken image.')) { try { const r = await api('DELETE', `/admin/api/media?url=${encodeURIComponent(del.dataset.delfile)}`); toast(r.stillReferenced ? 'Deleted — note: it was still in use somewhere' : 'Deleted'); renderMedia(); } catch (err) { toast(err.message, 'error'); } }
+      if (del && confirm('Delete this file? Anything still using it will show a broken image.')) { try { const r = await api('DELETE', `${BASE}/api/media?url=${encodeURIComponent(del.dataset.delfile)}`); toast(r.stillReferenced ? 'Deleted — note: it was still in use somewhere' : 'Deleted'); renderMedia(); } catch (err) { toast(err.message, 'error'); } }
     });
   }
 
@@ -270,7 +277,8 @@
       <p class="hint">Location comes from the host’s geo headers, or from ipapi.co when GEOIP_PROVIDER=ipapi is set. Records are kept in ${esc((status || {}).dataDir || 'the data folder')}/visits.json (newest 5,000).</p></div>`;
     $('[data-csv]', view).addEventListener('click', () => {
       const cols = ['at', 'ip', 'country', 'region', 'city', 'browser', 'os', 'device', 'page', 'referrer', 'language', 'userAgent'];
-      const csv = [cols.join(','), ...visits.map((v) => cols.map((c) => `"${String(v[c] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+      const cell = (v) => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
+      const csv = [cols.join(','), ...visits.map((v) => cols.map((c) => cell(v[c])).join(','))].join('\n');
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `visits-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     });
     $('[data-clear]', view).addEventListener('click', async () => { if (!confirm('Delete the whole visitor log?')) return; try { await api('POST', `${BASE}/api/visits/clear`, {}); toast('Log cleared'); absorb(await api('GET', `${BASE}/api/status`)); renderVisitors(); } catch (e) { toast(e.message, 'error'); } });
@@ -280,7 +288,7 @@
   async function renderMessages() {
     const { messages = [] } = await api('GET', `${BASE}/api/messages`);
     view.innerHTML = `<div class="card"><div class="card__head"><h2>Contact form messages<span class="count">${messages.length}</span></h2>${messages.length ? '<button type="button" class="btn btn--danger btn--small" data-clear>Clear all</button>' : ''}</div><p class="hint">Messages are saved here when email (SMTP) isn’t configured. With SMTP set up they are emailed to you instead and won’t appear in this list.</p>
-      ${messages.length ? `<div class="rows">${[...messages].reverse().map((m) => `<div class="msg"><header><strong>${esc(m.name)} &lt;${esc(m.email)}&gt;${m.company ? ` · ${esc(m.company)}` : ''}</strong><span class="mono">${esc(fmtDate(m.receivedAt))}</span></header><p>${esc(m.message)}</p><div class="actions"><a class="btn btn--small btn--ghost" href="mailto:${esc(m.email)}?subject=Re:%20your%20message%20on%20umitbozdag.com">Reply by email</a></div></div>`).join('')}</div>` : '<p class="empty">No messages saved.</p>'}</div>`;
+      ${messages.length ? `<div class="rows">${[...messages].reverse().map((m) => `<div class="msg"><header><strong>${esc(m.name)} &lt;${esc(m.email)}&gt;${m.company ? ` · ${esc(m.company)}` : ''}</strong><span class="mono">${esc(fmtDate(m.receivedAt))}</span></header><p>${esc(m.message)}</p><div class="actions"><a class="btn btn--small btn--ghost" href="mailto:${esc(encodeURIComponent(m.email))}?subject=Re:%20your%20message%20on%20umitbozdag.com">Reply by email</a></div></div>`).join('')}</div>` : '<p class="empty">No messages saved.</p>'}</div>`;
     const clear = $('[data-clear]', view);
     if (clear) clear.addEventListener('click', async () => { if (!confirm('Delete all saved messages?')) return; try { await api('POST', `${BASE}/api/messages/clear`, {}); toast('Cleared'); absorb(await api('GET', `${BASE}/api/status`)); renderMessages(); } catch (e) { toast(e.message, 'error'); } });
   }
@@ -292,10 +300,10 @@
       <div class="card"><div class="card__head"><h2>Storage</h2></div><table class="table"><tbody><tr><th>Content file</th><td class="mono">${esc(st.contentFile || '')}</td></tr><tr><th>Loaded from</th><td class="mono">${esc(st.loadedFrom || '')}</td></tr><tr><th>Uploads folder</th><td class="mono">${esc(st.uploadDir || '')}</td></tr><tr><th>Writable</th><td>${st.writable ? 'Yes' : 'No'}${st.temporary ? ' (temporary — this host forgets files on restart)' : ''}</td></tr><tr><th>Last saved</th><td>${st.lastSaved ? esc(fmtDate(st.lastSaved)) : 'Not yet'}</td></tr>${st.lastError ? `<tr><th>Last error</th><td style="color:var(--bad)">${esc(st.lastError)}</td></tr>` : ''}</tbody></table></div>
       <div class="card"><div class="card__head"><h2>Backup &amp; restore</h2></div><p class="hint">Download a copy of everything you have entered (events, text, settings) as a JSON file. Restore it later on this or another server. Uploaded photos are separate — back up the uploads folder too.</p><div class="actions"><a class="btn" href="${BASE}/api/export">Download backup</a><label class="btn btn--ghost">Restore from file… <input type="file" accept="application/json,.json" hidden data-import></label><span class="spacer"></span><button type="button" class="btn btn--danger" data-reset>Reset to built-in content</button></div></div>
       ${passwordMode === 'env' ? '<div class="card"><div class="card__head"><h2>Password</h2></div><p class="hint">On this host the password is set by the <code>ADMIN_PASSWORD</code> environment variable. Change it in the hosting control panel.</p></div>' : `<div class="card"><form class="form" data-pw><div class="card__head field--wide"><h2>Change password</h2></div><label class="field"><span>Current password</span><input type="password" name="current" autocomplete="current-password" required></label><label class="field"><span>New password (10+ characters)</span><input type="password" name="password" minlength="10" autocomplete="new-password" required></label><div class="actions"><button class="btn" type="submit">Update password</button></div></form></div>`}
-      <div class="card"><div class="card__head"><h2>Advanced: edit everything as JSON</h2></div><p class="hint">For anything the forms don’t cover. Invalid JSON or missing required fields are rejected, so you can’t break the site by accident.</p><form data-raw><textarea class="json field" data-raw-text spellcheck="false">${esc(JSON.stringify(content, null, 2))}</textarea><div class="actions"><button class="btn" type="submit">Save JSON</button><button class="btn btn--ghost" type="button" data-pretty>Re-format</button></div></form></div>`;
+      <div class="card"><div class="card__head"><h2>Advanced: edit everything as JSON</h2></div><p class="hint">For anything the forms don’t cover. Invalid JSON, wrong shapes and missing required fields are rejected.</p><form data-raw><textarea class="json field" data-raw-text spellcheck="false">${esc(JSON.stringify(content, null, 2))}</textarea><div class="actions"><button class="btn" type="submit">Save JSON</button><button class="btn btn--ghost" type="button" data-pretty>Re-format</button></div></form></div>`;
     $('[data-import]', view).addEventListener('change', async (e) => {
       const f = e.target.files[0]; if (!f) return;
-      try { const text = await f.text(); const parsed = JSON.parse(text); if (!confirm('Replace all current content with this backup?')) return; absorb(await api('POST', `${BASE}/api/import`, { content: parsed })); toast('Backup restored'); renderSettings(); }
+      try { const text = await f.text(); const parsed = JSON.parse(text); if (!confirm('Replace all current content with this backup?')) return; absorb(await api('POST', `${BASE}/api/import`, { content: parsed, version: version() })); toast('Backup restored'); renderSettings(); }
       catch (err) { toast(err.message, 'error'); }
       e.target.value = '';
     });
@@ -304,7 +312,7 @@
     if (pw) pw.addEventListener('submit', async (e) => { e.preventDefault(); try { await api('POST', `${BASE}/api/password`, { current: pw.current.value, password: pw.password.value }); toast('Password updated'); pw.reset(); } catch (err) { toast(err.message, 'error'); } });
     const raw = $('[data-raw]', view), ta = $('[data-raw-text]', view);
     $('[data-pretty]', view).addEventListener('click', () => { try { ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); } catch (err) { toast(`Not valid JSON: ${err.message}`, 'error'); } });
-    raw.addEventListener('submit', async (e) => { e.preventDefault(); let parsed; try { parsed = JSON.parse(ta.value); } catch (err) { toast(`Not valid JSON: ${err.message}`, 'error'); return; } try { absorb(await api('PUT', `${BASE}/api/content`, { content: parsed })); toast('Saved'); ta.value = JSON.stringify(content, null, 2); } catch (err) { toast(err.message, 'error'); } });
+    raw.addEventListener('submit', async (e) => { e.preventDefault(); let parsed; try { parsed = JSON.parse(ta.value); } catch (err) { toast(`Not valid JSON: ${err.message}`, 'error'); return; } try { absorb(await api('PUT', `${BASE}/api/content`, { content: parsed, version: version() })); toast('Saved'); ta.value = JSON.stringify(content, null, 2); } catch (err) { toast(err.message, 'error'); } });
   }
 
   /* ---------- routing ---------- */

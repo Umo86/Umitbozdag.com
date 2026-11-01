@@ -16,14 +16,15 @@
     <div class="brand"><span class="mark">UB</span><div><strong><%= p.name %></strong><span>Site admin</span></div></div>
     <% if (mode === 'disabled') { %>
       <h1>Admin is switched off</h1>
-      <p>Set an <code>ADMIN_PASSWORD</code> environment variable on this host (or make the data folder writable so a password can be stored), then reload this page.</p>
+      <p>Set an <code>ADMIN_PASSWORD</code> environment variable on this host, then restart the app and reload this page. (First-run setup is only offered on servers that keep their files; this host doesn’t.)</p>
     <% } else if (mode === 'setup') { %>
       <h1>Choose your admin password</h1>
-      <p>First visit — pick a password of at least 10 characters. You’ll use it to sign in from now on.</p>
+      <p>First visit — pick a password of at least 10 characters. You’ll use it to sign in from now on. The <strong>setup code</strong> is printed in the server log when the site starts and saved in <code>data/setup-code.txt</code>, so only you can do this step.</p>
       <% if (error) { %><p class="login__error" role="alert"><%= error %></p><% } %>
       <form method="post" action="<%= base %>/setup">
         <label>Password<input type="password" name="password" minlength="10" required autocomplete="new-password" autofocus></label>
         <label>Repeat password<input type="password" name="again" minlength="10" required autocomplete="new-password"></label>
+        <label>Setup code<input type="text" name="code" required autocomplete="off" spellcheck="false"></label>
         <button class="btn" type="submit">Save password &amp; sign in</button>
       </form>
     <% } else { %>

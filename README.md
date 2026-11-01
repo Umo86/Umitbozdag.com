@@ -68,10 +68,12 @@ uploads), organisers, the "Who I am" text, facts, numbers, services, skills, car
 cities, the header video, contact details, plus a visitor log, saved contact messages and
 backup / restore.
 
-- **Password.** Set `ADMIN_PASSWORD` in the host's environment variables, or simply open `/gs`
-  on a server with a writable data folder and choose a password on first visit (stored hashed in
-  `data/admin.json`; change it under *Backup & settings*). Optionally set `SESSION_SECRET` so
-  sign-ins survive restarts.
+- **Password.** Easiest: set `ADMIN_PASSWORD` in the host's environment variables. Otherwise, on a
+  server that keeps its files, open `/gs` and choose a password on first visit — you'll be asked for
+  the one-time **setup code** printed in the app's log at start-up (also saved in
+  `data/setup-code.txt`), so nobody else can claim the panel first. The password is stored hashed in
+  `data/admin.json`; change it under *Backup & settings*. Set `SESSION_SECRET` so sign-ins survive
+  restarts.
 - **Where things are saved.** Edits go to `data/content.json` (it takes precedence over
   `data/profile.js`, which stays as the built-in default); uploads go to `public/uploads/`.
   Both are git-ignored — use *Backup & settings → Download backup* regularly, and copy the uploads

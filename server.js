@@ -8,8 +8,12 @@ const helmet = require('helmet');
 const store = require('./lib/store');
 const { buildWorldMap } = require('./lib/worldmap');
 
+const crypto = require('crypto');
+
 const PORT = process.env.PORT || 3000;
-const ADMIN_PATH = '/' + String(process.env.ADMIN_PATH || '/gs').replace(/^\/+|\/+$/g, ''); // admin panel entrance
+// Admin panel entrance: letters, digits, . _ ~ - and slashes only; anything else falls back to /gs.
+const rawAdminPath = '/' + String(process.env.ADMIN_PATH || '/gs').replace(/^\/+|\/+$/g, '');
+const ADMIN_PATH = /^\/[\w.~-]+(\/[\w.~-]+)*$/.test(rawAdminPath) ? rawAdminPath : '/gs';
 const MESSAGES_FILE = path.join(store.DATA_DIR, 'messages.json');
 const VISITS_FILE = path.join(store.DATA_DIR, 'visits.json');
 const LOCAL_VIDEOS = ['london.mp4', 'london.webm'].map((f) => path.join(__dirname, 'public', 'video', f));
@@ -18,6 +22,7 @@ const TEMP_HOST = !!process.env.VERCEL; // read-only app folder: files written t
 // Header film: a self-hosted public/video/london.mp4 (or .webm) wins over the remote (Pexels) files.
 function heroVideo(p) {
   const v = { ...(p.heroVideo || {}) };
+  v.sources = { ...(v.sources || {}) };
   const local = LOCAL_VIDEOS.find((f) => fs.existsSync(f));
   if (local) {
     const url = '/video/' + path.basename(local);
@@ -53,6 +58,30 @@ function worldMapFor(p) {
 }
 
 const year = () => new Date().getFullYear();
+// Express 4 does not catch errors thrown inside async handlers; route them to the error handler instead.
+const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+const text = (v, n) => (typeof v === 'string' ? v : '').trim().slice(0, n);
+const safeEqual = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
+// Append to a JSON list on disk: one writer at a time per file, temp file + rename, corrupt files set aside.
+const fileQueues = new Map();
+function appendJsonList(file, entry, max) {
+  const prev = fileQueues.get(file) || Promise.resolve();
+  const run = prev.catch(() => {}).then(async () => {
+    let list = [];
+    try { list = JSON.parse(await fsp.readFile(file, 'utf8')); }
+    catch (e) { if (e.code !== 'ENOENT') { try { await fsp.rename(file, `${file}.corrupt-${Date.now()}`); } catch { /* ignore */ } } }
+    if (!Array.isArray(list)) list = [];
+    list.push(entry);
+    if (max && list.length > max) list = list.slice(-max);
+    store.ensureDir(path.dirname(file));
+    const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+    await fsp.writeFile(tmp, JSON.stringify(list, null, 2));
+    await fsp.rename(tmp, file);
+  });
+  fileQueues.set(file, run);
+  return run;
+}
+process.on('unhandledRejection', (err) => console.error('[unhandled rejection]', err));
 
 async function start() {
   const app = express();
@@ -68,7 +97,7 @@ async function start() {
 
   // The header video and its poster may live on another host (Pexels by default, or whatever is
   // entered in the admin panel), so those origins are added to the security policy on the fly.
-  const originOf = (u) => { try { return new URL(u).origin; } catch { return null; } };
+  const originOf = (u) => { try { const x = new URL(String(u)); return /^https?:$/.test(x.protocol) && /^[a-z0-9.-]+$/i.test(x.hostname) ? x.origin : null; } catch { return null; } };
   const videoHosts = () => { const v = store.get().heroVideo || {}; return [...new Set(Object.values(v.sources || {}).map(originOf).filter(Boolean))].join(' '); };
   const posterHost = () => originOf((store.get().heroVideo || {}).poster) || '';
   app.use(
@@ -126,9 +155,9 @@ async function start() {
     : null;
   console.log(mailer ? '[contact] emailing enquiries via ' + process.env.SMTP_HOST : `[contact] SMTP not set; enquiries saved to ${MESSAGES_FILE}`);
   const recent = new Map();
-  app.post('/api/contact', async (req, res) => {
-    const { name = '', email = '', company = '', message = '', website = '' } = req.body || {};
-    if (website) return res.json({ ok: true }); // honeypot field — bots fill it in
+  app.post('/api/contact', asyncRoute(async (req, res) => {
+    const b = req.body && typeof req.body === 'object' ? req.body : {};
+    if (b.website) return res.json({ ok: true }); // honeypot field — bots fill it in
 
     const ip = req.ip;
     const now = Date.now();
@@ -137,15 +166,14 @@ async function start() {
       return res.status(429).json({ ok: false, error: 'Please wait a moment before sending another message.' });
     }
 
-    const clean = (s, n) => String(s).trim().slice(0, n);
     const entry = {
-      name: clean(name, 120),
-      email: clean(email, 200),
-      company: clean(company, 160),
-      message: clean(message, 4000),
+      name: text(b.name, 120),
+      email: text(b.email, 200),
+      company: text(b.company, 160),
+      message: text(b.message, 4000),
       receivedAt: new Date().toISOString(),
     };
-    if (!entry.name || !/^\S+@\S+\.\S+$/.test(entry.email) || entry.message.length < 5) {
+    if (!entry.name || !/^[^\s@?&=,<>"']+@[^\s@?&=,<>"']+\.[^\s@?&=,<>"']+$/.test(entry.email) || entry.message.length < 5) {
       return res.status(400).json({ ok: false, error: 'Please add your name, a valid email and a short message.' });
     }
 
@@ -163,11 +191,7 @@ async function start() {
           text: `${entry.message}\n\n— ${entry.name}\n${entry.email}${entry.company ? `\n${entry.company}` : ''}\nSent ${entry.receivedAt}`,
         });
       } else if (!TEMP_HOST) {
-        let list = [];
-        try { list = JSON.parse(await fsp.readFile(MESSAGES_FILE, 'utf8')); } catch { /* first message */ }
-        list.push(entry);
-        store.ensureDir(path.dirname(MESSAGES_FILE));
-        await fsp.writeFile(MESSAGES_FILE, JSON.stringify(list, null, 2));
+        await appendJsonList(MESSAGES_FILE, entry);
       } else {
         return res.status(503).json({ ok: false, fallback: 'mailto', to });
       }
@@ -178,7 +202,7 @@ async function start() {
       console.error('[contact]', err.message);
       res.status(503).json({ ok: false, fallback: 'mailto', to });
     }
-  });
+  }));
 
   // ---- Visitor records (shown to the visitor in the consent banner and /privacy) ----
   const parseUA = (ua) => {
@@ -192,7 +216,7 @@ async function start() {
   };
   const isPrivateIp = (ip) => !ip || /^(::1|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::ffff:(127|10|192\.168)\.|fc|fd)/.test(ip);
   const visitRecent = new Map();
-  app.post('/api/visit', async (req, res) => {
+  app.post('/api/visit', asyncRoute(async (req, res) => {
     const ip = req.ip || '';
     const now = Date.now();
     for (const [k, t] of visitRecent) if (now - t > 60_000) visitRecent.delete(k);
@@ -202,8 +226,9 @@ async function start() {
     const geo = {
       country: req.get('x-vercel-ip-country') || req.get('cf-ipcountry') || null,
       region: req.get('x-vercel-ip-country-region') || null,
-      city: req.get('x-vercel-ip-city') ? decodeURIComponent(req.get('x-vercel-ip-city')) : null,
+      city: null,
     };
+    try { geo.city = req.get('x-vercel-ip-city') ? decodeURIComponent(req.get('x-vercel-ip-city')) : null; } catch { geo.city = req.get('x-vercel-ip-city') || null; }
     // Optional lookup for hosts that provide no geo headers (e.g. Hostinger): GEOIP_PROVIDER=ipapi
     if (!geo.country && process.env.GEOIP_PROVIDER === 'ipapi' && !isPrivateIp(ip)) {
       try {
@@ -211,26 +236,19 @@ async function start() {
         if (r.ok) { const j = await r.json(); geo.country = j.country_name || j.country || null; geo.region = j.region || null; geo.city = j.city || null; }
       } catch { /* best effort */ }
     }
-    const body = req.body || {};
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
     const entry = { at: new Date().toISOString(), ip, ...parseUA(ua), userAgent: ua.slice(0, 300), ...geo,
-      page: String(body.page || '').slice(0, 200), referrer: String(body.referrer || '').slice(0, 300), language: (req.get('accept-language') || '').split(',')[0].slice(0, 20), consent: true };
+      page: text(body.page, 200), referrer: text(body.referrer, 300), language: (req.get('accept-language') || '').split(',')[0].slice(0, 20), consent: true };
     console.log('[visit]', JSON.stringify(entry));
-    try {
-      let list = [];
-      try { list = JSON.parse(await fsp.readFile(VISITS_FILE, 'utf8')); } catch { /* first visit */ }
-      list.push(entry);
-      if (list.length > 5000) list = list.slice(-5000);
-      store.ensureDir(path.dirname(VISITS_FILE));
-      await fsp.writeFile(VISITS_FILE, JSON.stringify(list, null, 2));
-    } catch (err) { if (!TEMP_HOST) console.error('[visit]', err.message); }
+    try { await appendJsonList(VISITS_FILE, entry, 5000); } catch (err) { if (!TEMP_HOST) console.error('[visit]', err.message); }
     res.json({ ok: true });
-  });
+  }));
   // Read the records without signing in: GET /api/visits?key=<ADMIN_KEY>  (the admin panel shows them too)
-  app.get('/api/visits', async (req, res) => {
+  app.get('/api/visits', asyncRoute(async (req, res) => {
     const key = process.env.ADMIN_KEY;
-    if (!key || req.query.key !== key) return res.status(404).render('404', { p: store.get() });
+    if (!key || typeof req.query.key !== 'string' || !safeEqual(req.query.key, key)) return res.status(404).render('404', { p: store.get() });
     try { res.json(JSON.parse(await fsp.readFile(VISITS_FILE, 'utf8'))); } catch { res.json([]); }
-  });
+  }));
   app.get('/privacy', (req, res) => res.render('privacy', { p: store.get(), year: year() }));
 
   // ---- Admin panel (default /gs; set ADMIN_PATH to move it) ----
@@ -238,6 +256,14 @@ async function start() {
   console.log(`[admin] panel at ${ADMIN_PATH}`);
 
   app.use((req, res) => res.status(404).render('404', { p: store.get() }));
+  // Last resort: log, answer, keep running.
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, req, res, next) => {
+    console.error('[error]', req.method, req.originalUrl, err && err.stack ? err.stack : err);
+    if (res.headersSent) return;
+    if (/\/api\//.test(req.originalUrl)) return res.status(500).json({ ok: false, error: 'Something went wrong on the server.' });
+    return res.status(500).type('text').send('Something went wrong. Please try again in a moment.');
+  });
 
   app.listen(PORT, '0.0.0.0', () => console.log(`Umit Bozdag site running at http://localhost:${PORT}`));
 }

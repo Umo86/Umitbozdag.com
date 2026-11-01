@@ -62,9 +62,9 @@
         <canvas class="hero__canvas"></canvas>
         <video class="hero__video" muted playsinline autoplay loop preload="metadata"
                poster="<%= video.poster || '/img/scenes/poster.jpg' %>"
-               data-src-mobile="<%= video.sources.mobile %>"
-               data-src-desktop="<%= video.sources.desktop %>"
-               data-src-large="<%= video.sources.large %>"></video>
+               data-src-mobile="<%= (video.sources || {}).mobile || '' %>"
+               data-src-desktop="<%= (video.sources || {}).desktop || '' %>"
+               data-src-large="<%= (video.sources || {}).large || '' %>"></video>
         <div class="hero__tint"></div>
         <div class="hero__lift"></div>
         <div class="hero__shade"></div>
@@ -90,8 +90,8 @@
 
         <div class="about__grid">
           <figure class="about__figure reveal">
-            <img src="<%= p.portrait.image %>" alt="<%= p.portrait.alt %>" loading="lazy" width="1000" height="1250">
-            <figcaption class="mono"><%= p.portrait.caption %></figcaption>
+            <% const portrait = p.portrait || {}; %><img src="<%= portrait.image || '/img/scenes/westminster.webp' %>" alt="<%= portrait.alt || '' %>" loading="lazy" width="1000" height="1250">
+            <% if (portrait.caption) { %><figcaption class="mono"><%= portrait.caption %></figcaption><% } %>
           </figure>
           <div class="about__side">
             <div class="about__intro reveal"><% intro.forEach((para) => { %><p><%= para %></p><% }) %></div>
