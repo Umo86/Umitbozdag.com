@@ -61,6 +61,28 @@ London skyline plays behind the name instead.
 - **Look:** `tone: 'duotone'` applies the black / blue / white duotone treatment;
   `tone: 'natural'` shows the footage in its original colours.
 
+## Admin panel
+
+Sign in at **`/admin`** to edit everything without touching code: events (with logo and photo
+uploads), organisers, the "Who I am" text, facts, numbers, services, skills, career history, map
+cities, the header video, contact details, plus a visitor log, saved contact messages and
+backup / restore.
+
+- **Password.** Set `ADMIN_PASSWORD` in the host's environment variables, or simply open `/admin`
+  on a server with a writable data folder and choose a password on first visit (stored hashed in
+  `data/admin.json`; change it under *Backup & settings*). Optionally set `SESSION_SECRET` so
+  sign-ins survive restarts.
+- **Where things are saved.** Edits go to `data/content.json` (it takes precedence over
+  `data/profile.js`, which stays as the built-in default); uploads go to `public/uploads/`.
+  Both are git-ignored — use *Backup & settings → Download backup* regularly, and copy the uploads
+  folder when moving servers. `DATA_DIR` / `UPLOAD_DIR` override the locations.
+- **Vercel.** The app folder is read-only there, so the admin falls back to `/tmp`: you can try it,
+  but edits disappear when the instance is recycled. Hostinger (or any server with a disk) keeps them.
+- Images are shrunk in the browser before upload (photos 1800px, logos 900px; SVG kept as is).
+  Uploaded logos are referenced by URL (`logoUrl`) and override the built-in `logo` slug.
+- Protection: HMAC-signed cookie (7 days), 8 failed sign-ins per 10 minutes per IP, same-origin
+  checks on every change, `noindex` on all admin pages.
+
 ## Show pages
 
 `/shows/<id>` renders `views/show.ejs` for every entry in `shows`: logo, role, venue and dates, the
@@ -120,7 +142,7 @@ Needs a Hostinger plan with **Node.js Web Apps** (Business or Cloud web hosting,
    install/build command `npm install`, entry file `server.js`, start command `npm start`.
    To self-host the header video, use `npm install && npm run fetch:video` as the build command.
 4. Environment variables: `NODE_ENV=production`, the `SMTP_*` variables above so the contact form
-   emails you, `ADMIN_KEY=<a long random string>` to be able to read the visit log, and
+   emails you, `ADMIN_PASSWORD` (and ideally `SESSION_SECRET`) for the admin panel, and
    `GEOIP_PROVIDER=ipapi` so visits get a country and city. Hostinger provides `PORT` automatically.
 5. Deploy, then attach `umitbozdag.com` / `www.umitbozdag.com` under the app's **Domains** and enable SSL.
 

@@ -133,12 +133,12 @@ module.exports = {
       responsibilities: ['Operational lead on sponsorship delivery', 'Signage and wayfinding across the show', 'Temporary staffing', 'Internet connectivity for the conference area and show floor', 'Venue liaison with Fiera Milano', 'Meeting rooms', 'Catering services', 'Operational budgeting with the Director of Operations'] },
     { id: 'world-lng-summit-2025', logo: 'world-lng', name: 'World LNG Summit & Awards 2025', organiser: 'dmg-events', role: 'Operations Manager — operational support', years: '2025', dates: '2 – 5 December 2025',
       venue: 'Shangri-La Bosphorus', city: 'Istanbul', country: 'Türkiye', url: 'https://www.worldlngsummit.com/', image: '/img/scenes/log-3.webp', featured: true,
-      summary: 'The 25th World LNG Summit & Awards — hosted by BOTAŞ and held in Türkiye for the first time, convening around 1,000 senior attendees and 120 speakers from across the LNG value chain, with the World LNG Awards evening on 3 December.',
-      responsibilities: ['Signage', 'Temporary staffing', 'Venue liaison with the Shangri-La Bosphorus', 'Meeting rooms', 'Catering services'] },
+      summary: 'The 25th World LNG Summit & Awards — hosted by BOTAŞ and held in Türkiye for the first time, convening around 1,000 senior attendees and 120 speakers from across the LNG value chain, with the World LNG Awards evening on 3 December. I was in a supporting role on operations here, working alongside the summit’s operations lead.',
+      responsibilities: ['Supporting the operations lead across the summit', 'Signage', 'Temporary staffing', 'Venue liaison with the Shangri-La Bosphorus', 'Meeting rooms', 'Catering services'] },
     { id: 'bharat-electricity-summit-2025', logo: 'bharat-electricity', name: 'Bharat Electricity Summit 2025', organiser: 'dmg-events', role: 'Operations Manager — operational support', years: '2025', dates: '2 – 4 September 2025',
       venue: 'Yashobhoomi (IICC)', city: 'New Delhi', country: 'India', url: 'https://www.bharatelectricitysummit.com/', image: '/img/scenes/hall-3.webp',
-      summary: 'India’s power-sector summit and exhibition, held under the patronage of the Ministry of Power and co-located with POWERGEN India and Indian Utility Week at Yashobhoomi, New Delhi.',
-      responsibilities: ['Operational support to the delivery team', 'Supplier and venue coordination'] },
+      summary: 'India’s power-sector summit and exhibition, held under the patronage of the Ministry of Power and co-located with POWERGEN India and Indian Utility Week at Yashobhoomi, New Delhi. I was in a supporting role on operations here, backing up the delivery team.',
+      responsibilities: ['Supporting the operations and delivery team', 'Supplier and venue coordination'] },
 
     // ---- Hyve Group (2023 — 2025) ----
     { id: 'breakbulk-europe', logo: 'breakbulk', name: 'Breakbulk Europe', organiser: 'hyve', role: 'Operations Manager — operational lead', years: '2023 · 2024',
@@ -236,7 +236,7 @@ module.exports = {
         'Pre- and post-event site visits with venues and suppliers; negotiated favourable rates.',
         'Managed design and construction of feature areas within specification and budget.',
       ],
-      events: ['Gastech 2025 — Fiera Milano (operational lead)', 'World LNG Summit & Awards 2025 — Istanbul', 'Bharat Electricity Summit 2025 — New Delhi'],
+      events: ['Gastech 2025 — Fiera Milano (operational lead)', 'World LNG Summit & Awards 2025 — Istanbul (operations support)', 'Bharat Electricity Summit 2025 — New Delhi (operations support)'],
     },
     {
       role: 'Operations Manager', company: 'Hyve Group', place: 'London', period: '2023 — 2025', start: '2023',

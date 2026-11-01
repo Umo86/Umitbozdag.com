@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <%
-  const lg = logos[show.logo] || null;
+  const lg = show.logoUrl || logos[show.logo] || null;
   const waHref = p.whatsapp ? `https://wa.me/${p.whatsapp}?text=${encodeURIComponent(p.whatsappText || '')}` : null;
   const where = [show.venue, show.city, show.country].filter(Boolean).join(' · ');
 %>
@@ -110,7 +110,7 @@
         <% if (related.length) { %>
           <div class="employers__head"><span class="mono">// More with <%= employer ? employer.name : 'this organiser' %></span><a class="mono" href="/#events">All events →</a></div>
           <div class="related">
-            <% related.forEach((r) => { const rl = logos[r.logo]; %>
+            <% related.forEach((r) => { const rl = r.logoUrl || logos[r.logo]; %>
               <a class="showrow" href="/shows/<%= r.id %>">
                 <span class="showrow__logo"><% if (rl) { %><img src="<%= rl %>" alt=""><% } else { %><span class="initials"><%= r.name.split(/\s+/).slice(0, 3).map((w) => w[0]).join('').toUpperCase() %></span><% } %></span>
                 <div><strong><%= r.name %></strong><span class="showrow__venue"><%= r.venue %><%= r.city ? ', ' + r.city : '' %></span></div>
@@ -143,8 +143,8 @@
   </a>
   <div class="wa-bubble" role="status">
     <button type="button" class="wa-bubble__close" aria-label="Dismiss">×</button>
-    <strong>Hi, I’m <%= p.firstName %> 👋</strong>
-    Planning a show, or want to talk events? <a href="<%= waHref %>" target="_blank" rel="noopener">Let’s chat on WhatsApp →</a>
+    <strong>Hey, let’s talk.</strong>
+    <a href="<%= waHref %>" target="_blank" rel="noopener">Message me on WhatsApp →</a>
   </div>
   <% } %>
 

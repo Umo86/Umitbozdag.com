@@ -21,6 +21,7 @@
 </head>
 <%
   const logoFor = (key) => (key && logos && logos[key]) || null;
+  const logoOf = (x) => (x && x.logoUrl) || logoFor(x && x.logo); // uploaded logo wins over the built-in one
   const initials = (name) => name.replace(/[^A-Za-z0-9 &]/g, '').split(/\s+/).filter(Boolean).slice(0, 3).map((w) => w[0]).join('').toUpperCase();
   const showCount = p.shows.length;
   // Distinct countries; roadshows span several so they don't count as one (falls back to the stat).
@@ -114,7 +115,7 @@
         <div class="career" id="career">
           <div class="employers__head"><span class="mono">// Where I’ve worked</span><span class="mono">2012 → today · <%= p.employers.length %> organisers</span></div>
           <ul class="career__list">
-            <% p.employers.forEach((e, i) => { const lg = logoFor(e.logo); %>
+            <% p.employers.forEach((e, i) => { const lg = logoOf(e); %>
               <li class="crow reveal" style="--d:<%= i * 0.06 %>s">
                 <a class="crow__logo" href="<%= e.url %>" target="_blank" rel="noopener" aria-label="<%= e.name %> website"><% if (lg) { %><img src="<%= lg %>" alt="<%= e.name %> logo" loading="lazy"><% } else { %><span class="wordmark"><%= e.name %></span><% } %></a>
                 <div>
@@ -172,7 +173,7 @@
         </div>
 
         <ul class="evt-grid">
-          <% p.shows.forEach((s, i) => { const lg = logoFor(s.logo); const org = p.employers.find((e) => e.id === s.organiser); %>
+          <% p.shows.forEach((s, i) => { const lg = logoOf(s); const org = p.employers.find((e) => e.id === s.organiser); %>
             <li data-org="<%= s.organiser %>" class="reveal" style="--d:<%= (i % 2) * 0.06 %>s">
               <a class="evt" href="/shows/<%= s.id %>">
                 <span class="evt__logo"><% if (lg) { %><img src="<%= lg %>" alt="" loading="lazy"><% } else { %><span class="initials"><%= initials(s.name) %></span><% } %></span>
@@ -336,8 +337,8 @@
   </a>
   <div class="wa-bubble" role="status">
     <button type="button" class="wa-bubble__close" aria-label="Dismiss">×</button>
-    <strong>Hi, I’m <%= p.firstName %> 👋</strong>
-    Planning a show, or want to talk events? <a href="<%= waHref %>" target="_blank" rel="noopener">Let’s chat on WhatsApp →</a>
+    <strong>Hey, let’s talk.</strong>
+    <a href="<%= waHref %>" target="_blank" rel="noopener">Message me on WhatsApp →</a>
   </div>
   <% } %>
 
