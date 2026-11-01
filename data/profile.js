@@ -24,9 +24,9 @@ module.exports = {
   website: 'https://www.umitbozdag.com',
   availability: 'Open to conversations',
 
-  statement: 'I’m a senior operations manager who puts on large exhibitions and conferences — 23 shows in 8 countries since 2012, now with Media10 in London.',
+  statement: 'I’m a senior operations manager who puts on large exhibitions and conferences — 24 shows in 8 countries since 2012, now with Media10 in London.',
   intro: [
-    'I’m Umit — a senior operations manager who has spent 14 years putting on exhibitions and conferences. Since 2012 I’ve worked on 23 shows in 8 countries: from the Türkiye pavilion at World Travel Market to Gastech in Milan, Breakbulk in Rotterdam and Houston, and now UK Construction Week and Futurebuild at ExCeL London.',
+    'I’m Umit — a senior operations manager who has spent 14 years putting on exhibitions and conferences. Since 2012 I’ve worked on 24 shows in 8 countries: from the Türkiye pavilion at World Travel Market to Gastech in Milan, Breakbulk in Rotterdam and Houston, and now UK Construction Week and Futurebuild at ExCeL London.',
     'My job is the practical side of a show — budgets, suppliers, venues, floorplans, health & safety and everything on site — so the organiser’s team can focus on exhibitors and visitors. I also build small digital tools and AI workflows that make the work faster.',
   ],
 
@@ -63,7 +63,7 @@ module.exports = {
   // Factual numbers — all verifiable from the shows list below.
   stats: [
     { value: 14, suffix: '', label: 'Years in live events (2012 — 2026)' },
-    { value: 23, suffix: '', label: 'Shows worked on' },
+    { value: 24, suffix: '', label: 'Shows worked on' },
     { value: 8, suffix: '', label: 'Countries delivered in' },
     { value: 4, suffix: '', label: 'Organisers worked for' },
   ],
@@ -77,7 +77,7 @@ module.exports = {
     { id: 'dmg-events', logo: 'dmg-events', name: 'dmg events', url: 'https://www.dmgevents.com/', role: 'Operations Manager', period: '2025 — 2026',
       note: 'Gastech, World LNG Summit & Awards, Bharat Electricity Summit' },
     { id: 'hyve', logo: 'hyve', name: 'Hyve Group', url: 'https://hyve.group/', role: 'Operations Manager', period: '2023 — 2025',
-      note: 'Breakbulk Europe, Breakbulk Americas, Pure London' },
+      note: 'Breakbulk Europe, Breakbulk Americas, Pure London, Source Fashion' },
     { id: 'turkish-office', logo: 'goturkiye', name: 'Turkish Culture & Information Office', sub: 'Turkish Embassy in London', url: 'https://goturkiye.com/', role: 'Information Officer → Exhibitions & Marketing Officer', period: '2012 — 2022',
       note: 'World Travel Market, London Fashion Week, RHS Hampton Court, consumer & trade shows and roadshows across the UK, Ireland and South Africa' },
   ],
@@ -151,8 +151,12 @@ module.exports = {
       responsibilities: ['Signage', 'Temporary staffing', 'Venue liaison with the George R. Brown Convention Center', 'Meeting rooms', 'Catering services', 'The exhibitor party'] },
     { id: 'pure-london', logo: 'pure-london', name: 'Pure London', organiser: 'hyve', role: 'Operations Manager — operational support', years: '2023 · 2024',
       venue: 'Olympia London', city: 'London', country: 'United Kingdom', url: 'https://www.purelondon.com/', image: '/img/scenes/log-4.webp', featured: true,
-      summary: 'The UK’s leading fashion trade show, held twice a year at Olympia London during my time on the show.',
-      responsibilities: ['Operational support across the show floor', 'Supplier and venue coordination'] },
+      summary: 'The UK’s leading fashion trade show, held twice a year at Olympia London. I was in a supporting role on operations here, working alongside the show’s operations lead.',
+      responsibilities: ['Supporting the operations team across the show floor', 'Supplier and venue coordination', 'Build-up and breakdown support at Olympia London'] },
+    { id: 'source-fashion', logo: 'source-fashion', name: 'Source Fashion', organiser: 'hyve', role: 'Operations Manager — operational support', years: '2023 · 2024',
+      venue: 'Olympia London', city: 'London', country: 'United Kingdom', url: 'https://www.source-fashion.com/', image: '/img/scenes/hall-4.webp',
+      summary: 'Hyve’s responsible-sourcing show for fashion buyers — garment, footwear and accessories manufacturers from around the world — co-located with Pure London at Olympia London. I supported the operations team across both shows.',
+      responsibilities: ['Supporting operations alongside Pure London at Olympia London', 'Supplier and contractor coordination on site', 'Build-up, live days and breakdown support'] },
 
     // ---- Turkish Culture & Information Office, Turkish Embassy in London (2012 — 2022) ----
     { id: 'world-travel-market-london', logo: 'wtm-london', name: 'World Travel Market London', organiser: 'turkish-office', role: 'Exhibitions & Marketing Officer', years: '2012 — 2022',
@@ -236,14 +240,14 @@ module.exports = {
     },
     {
       role: 'Operations Manager', company: 'Hyve Group', place: 'London', period: '2023 — 2025', start: '2023',
-      summary: 'Ran two industry-leading events in the global cargo industry — Breakbulk Europe and Breakbulk Americas — with 18,000+ visitors and 1,000 exhibitors, managed end to end.',
+      summary: 'Ran two industry-leading events in the global cargo industry — Breakbulk Europe and Breakbulk Americas — with 18,000+ visitors and 1,000 exhibitors, managed end to end — and supported operations on Pure London and Source Fashion at Olympia London.',
       points: [
         'Led catering, cleaning, signage, security and staffing projects.',
         'Ensured floorplan compliance with venue and local regulations.',
         'Operational budgeting with the Head of Operations.',
         'Sponsorship management: trackers, new opportunities, sponsor point of contact.',
       ],
-      events: ['Breakbulk Europe 2023 & 2024 — Rotterdam Ahoy (operational lead)', 'Breakbulk Americas 2023 & 2024 — George R. Brown, Houston', 'Pure London 2023 & 2024 — Olympia'],
+      events: ['Breakbulk Europe 2023 & 2024 — Rotterdam Ahoy (operational lead)', 'Breakbulk Americas 2023 & 2024 — George R. Brown, Houston', 'Pure London 2023 & 2024 — Olympia (operations support)', 'Source Fashion 2023 & 2024 — Olympia (operations support)'],
     },
     {
       role: 'Exhibitions & Marketing Officer', company: 'Turkish Culture & Information Office — Turkish Embassy in London', place: 'London', period: '2014 — 2022', start: '2014',
