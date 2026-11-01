@@ -16,10 +16,12 @@ PORT=8080 npm start
 
 ## Edit the content
 
-Everything shown on the site lives in **`data/profile.js`** — name, title, intro, facts, stats, the
-employers ("Worked with"), the four capability cards, the shows (featured cards, the list grouped by
-organiser and the per-show pages), the career line/experience, the "work together" card, credentials,
-map cities and contact links. Edit that file and restart; no HTML changes are needed.
+The home page is deliberately simple: **Who I am** (intro, facts, numbers, where I've worked),
+**What I do** (six service cards), **Events** (every show, filterable by organiser, with the world
+map) and **Contact**. Everything shown lives in **`data/profile.js`** — name, title, `statement`,
+`intro` paragraphs, `facts`, `stats`, `employers`, `servicesIntro` + `services`, `alsoSkills`, the
+`shows` (each with its own page), `experience` (used on the show pages), map `cities` and contact
+links. Edit that file and restart; no HTML changes are needed.
 
 - **Shows:** each entry in `shows` has an `id` (its page is `/shows/<id>`), `logo` (see below), `url`
   (the event website, linked from the card and the page), `image`, `venue`/`city`/`country`,

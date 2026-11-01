@@ -24,9 +24,11 @@ module.exports = {
   website: 'https://www.umitbozdag.com',
   availability: 'Open to conversations',
 
-  statement: 'I’m a senior operations manager focused on delivering large-scale exhibitions — tight budgets, global suppliers, and the details that make a show floor run.',
-  intro:
-    'Since 2012 I’ve delivered international exhibitions and conferences across the UK, Europe, Asia, North America and Africa — from the Türkiye pavilion at World Travel Market to Gastech, Breakbulk and UK Construction Week. I manage budgets, negotiate with global suppliers and keep cross-functional teams aligned under pressure, and I pair that operational backbone with hands-on technical execution, using generative AI and rapid prototyping to build tools in house.',
+  statement: 'I’m a senior operations manager who puts on large exhibitions and conferences — 23 shows in 8 countries since 2012, now with Media10 in London.',
+  intro: [
+    'I’m Umit — a senior operations manager who has spent 14 years putting on exhibitions and conferences. Since 2012 I’ve worked on 23 shows in 8 countries: from the Türkiye pavilion at World Travel Market to Gastech in Milan, Breakbulk in Rotterdam and Houston, and now UK Construction Week and Futurebuild at ExCeL London.',
+    'My job is the practical side of a show — budgets, suppliers, venues, floorplans, health & safety and everything on site — so the organiser’s team can focus on exhibitors and visitors. I also build small digital tools and AI workflows that make the work faster.',
+  ],
 
   // Header film. The remote files are the free Pexels clip "Aerial View of a City"
   // (https://www.pexels.com/video/aerial-view-of-a-city-6099374/, Pexels licence —
@@ -78,6 +80,17 @@ module.exports = {
       note: 'Breakbulk Europe, Breakbulk Americas, Pure London' },
     { id: 'turkish-office', logo: 'goturkiye', name: 'Turkish Culture & Information Office', sub: 'Turkish Embassy in London', url: 'https://goturkiye.com/', role: 'Information Officer → Exhibitions & Marketing Officer', period: '2012 — 2022',
       note: 'World Travel Market, London Fashion Week, RHS Hampton Court, consumer & trade shows and roadshows across the UK, Ireland and South Africa' },
+  ],
+
+  // "What I do" — one line per service, shown as simple cards on the home page.
+  servicesIntro: 'Everything that has to happen for a show to open on time, on budget and safely.',
+  services: [
+    { title: 'Show operations, end to end', text: 'Venue contracting, build-up, live days and breakdown — often across several shows at once, in London and abroad.' },
+    { title: 'Budgets & suppliers', text: 'Operational budgets built with directors and held to the final reconciliation; tendering and negotiating with suppliers worldwide.' },
+    { title: 'Venues, floorplans & compliance', text: 'Venue liaison and floorplan compliance with venue and local regulations — ExCeL, Olympia, the NEC, Fiera Milano, Rotterdam Ahoy and more.' },
+    { title: 'Health & safety', text: 'IOSH Safe Management at Live Events: risk control, monitoring and safe working on the show floor.' },
+    { title: 'Onsite services & staffing', text: 'Catering, cleaning, security, temporary staffing, signage and wayfinding, internet and power.' },
+    { title: 'Sponsorship, features & digital tools', text: 'Sponsor deliverables and feature areas built to spec and budget, plus in-house tools and AI workflows that speed up delivery.' },
   ],
 
   // The four big capability cards. `wide: true` makes a landscape card; the others are tall.

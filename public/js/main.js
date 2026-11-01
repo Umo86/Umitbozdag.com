@@ -275,6 +275,42 @@
     window.matchMedia('(min-width: 761px)').addEventListener('change', (e) => { if (e.matches) setOpen(false); });
   }
 
+  /* ---------- Events: filter by organiser ---------- */
+  function eventFilters() {
+    const bar = $('.filters');
+    if (!bar) return;
+    const items = $$('.evt-grid > li');
+    const apply = (f) => {
+      $$('button[data-filter]', bar).forEach((b) => { const on = b.dataset.filter === f; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); });
+      items.forEach((li) => { li.hidden = !(f === 'all' || li.dataset.org === f); });
+    };
+    bar.addEventListener('click', (e) => { const b = e.target.closest('button[data-filter]'); if (b) apply(b.dataset.filter); });
+    // "4 events ↓" links in the career list pre-select that organiser
+    $$('[data-filter-link]').forEach((a) => a.addEventListener('click', () => apply(a.dataset.filterLink)));
+  }
+
+  /* ---------- WhatsApp greeting bubble ---------- */
+  function whatsapp() {
+    const bubble = $('.wa-bubble');
+    if (!bubble) return;
+    let seen = false;
+    try { seen = sessionStorage.getItem('ub-wa') === '1'; } catch { /* private mode */ }
+    if (seen) { bubble.remove(); return; }
+    const hide = () => {
+      bubble.classList.remove('is-on');
+      try { sessionStorage.setItem('ub-wa', '1'); } catch { /* ignore */ }
+      setTimeout(() => bubble.remove(), 600);
+    };
+    const show = () => { if (body.classList.contains('consent-pending')) setTimeout(show, 1500); else bubble.classList.add('is-on'); };
+    setTimeout(show, 5000);
+    const close = $('.wa-bubble__close', bubble);
+    if (close) close.addEventListener('click', (e) => { e.preventDefault(); hide(); });
+    const link = $('a', bubble);
+    if (link) link.addEventListener('click', hide);
+    const wa = $('.wa');
+    if (wa) wa.addEventListener('click', hide);
+  }
+
   /* ---------- Offer tabs (decorative toggle) ---------- */
   function offerTabs() {
     const tabs = $$('.offer__tabs button');
@@ -386,6 +422,8 @@
     magnetic();
     mobileNav();
     offerTabs();
+    eventFilters();
+    whatsapp();
     imageFallbacks();
     contactForm();
     intro();

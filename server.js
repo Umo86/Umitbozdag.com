@@ -81,7 +81,7 @@ async function start() {
   const shows = profile.shows || [];
   const showById = new Map(shows.map((s) => [s.id, s]));
   const employerById = new Map((profile.employers || []).map((e) => [e.id, e]));
-  app.get('/shows', (req, res) => res.redirect('/#shows'));
+  app.get('/shows', (req, res) => res.redirect('/#events'));
   app.get('/shows/:id', (req, res) => {
     const show = showById.get(req.params.id);
     if (!show) return res.status(404).render('404', { p: profile });
