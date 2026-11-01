@@ -9,17 +9,19 @@
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body class="is-ready subpage">
-  <header class="nav is-scrolled">
-    <a href="/" class="nav__brand" aria-label="<%= p.name %> — home"><span class="nav__mark">UB</span><span class="nav__name"><%= p.name %></span></a>
-    <nav class="nav__links" aria-label="Primary"><a href="/#about">About</a><a href="/#services">What I do</a><a href="/#events">Events</a><a href="/#contact">Contact</a></nav>
-    <div class="nav__right"><button class="nav__burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button></div>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a href="/" class="nav__brand"><%= p.name %></a>
+      <nav class="nav__links" aria-label="Primary"><a href="/#about">About</a><a href="/#services">What I do</a><a href="/#events">Events</a><a href="/#contact">Contact</a></nav>
+      <button class="nav__burger" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    </div>
   </header>
-  <main class="container prose">
-    <span class="mono accent">// Privacy notice</span>
+  <main class="prose">
+    <span class="kicker">Privacy notice</span>
     <h1>What this site records about visitors</h1>
     <p>umitbozdag.com is the personal website of <%= p.name %>, London. When you agree to the notice shown on arrival and browse the site, the following details are recorded:</p>
     <ul>
@@ -38,10 +40,10 @@
     <p>Messages sent through the contact form are delivered to <%= p.name %> by email and used only to reply to you. The WhatsApp button opens a chat with <%= p.firstName %> in WhatsApp; WhatsApp’s own privacy policy then applies.</p>
     <p><a href="/">← Back to the site</a></p>
   </main>
-  <footer class="footer footer--compact">
-    <div class="container footer__bottom">
-      <span>© <%= year %> <%= p.name %>. Web design by <%= p.name %> — all rights reserved.</span>
-      <a href="/" class="footer__up">umitbozdag.com →</a>
+  <footer class="footer">
+    <div class="wrap">
+      <span>© <%= year %> <%= p.name %> · Web design by <%= p.name %> — all rights reserved.</span>
+      <nav aria-label="Footer"><a href="/">umitbozdag.com →</a></nav>
     </div>
   </footer>
   <script src="/js/main.js" defer></script>

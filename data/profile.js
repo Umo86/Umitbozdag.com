@@ -24,7 +24,7 @@ module.exports = {
   website: 'https://www.umitbozdag.com',
   availability: 'Open to conversations',
 
-  statement: 'I’m a senior operations manager who puts on large exhibitions and conferences — 24 shows in 8 countries since 2012, now with Media10 in London.',
+  statement: 'I make large exhibitions and conferences run on time, on budget and safely.',
   intro: [
     'I’m Umit — a senior operations manager who has spent 14 years putting on exhibitions and conferences. Since 2012 I’ve worked on 24 shows in 8 countries: from the Türkiye pavilion at World Travel Market to Gastech in Milan, Breakbulk in Rotterdam and Houston, and now UK Construction Week and Futurebuild at ExCeL London.',
     'My job is the practical side of a show — budgets, suppliers, venues, floorplans, health & safety and everything on site — so the organiser’s team can focus on exhibitors and visitors. I also build small digital tools and AI workflows that make the work faster.',

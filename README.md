@@ -16,7 +16,7 @@ PORT=8080 npm start
 
 ## Edit the content
 
-The home page is deliberately simple: **Who I am** (intro, facts, numbers, where I've worked),
+The home page is deliberately simple: a London film under the name, a world-map strip, **About** (intro, facts, where I've worked),
 **What I do** (six service cards), **Events** (every show, filterable by organiser, with the world
 map) and **Contact**. Everything shown lives in **`data/profile.js`** — name, title, `statement`,
 `intro` paragraphs, `facts`, `stats`, `employers`, `servicesIntro` + `services`, `alsoSkills`, the

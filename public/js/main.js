@@ -7,31 +7,8 @@
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-  const lerp = (a, b, t) => a + (b - a) * t;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
   const body = document.body;
-
-  /* ---------- London clock ---------- */
-  function clock() {
-    const els = $$('[data-clock]');
-    if (!els.length) return;
-    let fmt, tzFmt;
-    try {
-      fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/London' });
-      tzFmt = new Intl.DateTimeFormat('en-GB', { timeZoneName: 'short', timeZone: 'Europe/London' });
-    } catch { return; }
-    const tick = () => {
-      const now = new Date();
-      const time = fmt.format(now);
-      els.forEach((el) => { el.textContent = time; });
-      const part = tzFmt.formatToParts(now).find((p) => p.type === 'timeZoneName');
-      if (part) $$('[data-tz]').forEach((el) => { el.textContent = part.value; });
-    };
-    tick();
-    setInterval(tick, 15000);
-  }
 
   /* ---------- Hero: illustrated fallback + the London film ---------- */
   function hero() {
@@ -107,158 +84,6 @@
       else if (ready) video.play().catch(() => {}); else startCanvas();
     });
   }
-
-  /* ---------- Hero name: split into letters and fit the width ---------- */
-  function heroName() {
-    const h1 = $('.hero__name');
-    const words = $$('.hero__word');
-    if (!h1 || !words.length) return;
-    words.forEach((w, wi) => {
-      const text = w.textContent.trim();
-      w.textContent = '';
-      w.setAttribute('aria-hidden', 'true');
-      Array.from(text).forEach((ch, i) => {
-        const s = document.createElement('span');
-        s.className = 'ch';
-        s.style.setProperty('--ci', wi * 5 + i);
-        s.textContent = ch;
-        w.appendChild(s);
-      });
-    });
-    const wrap = h1.parentElement;
-    const fit = () => {
-      const stacked = window.innerWidth < 760;
-      h1.classList.toggle('is-stacked', stacked);
-      h1.style.fontSize = '100px';
-      const avail = wrap.clientWidth;
-      const widths = words.map((w) => w.getBoundingClientRect().width);
-      let size;
-      if (stacked) size = (100 * avail) / Math.max(...widths) * 0.95;
-      else size = (100 * avail) / (widths.reduce((a, b) => a + b, 0) + 20 * (words.length - 1)) * 0.975;
-      h1.style.fontSize = `${Math.floor(size)}px`;
-    };
-    fit();
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
-    let rt;
-    window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(fit, 80); });
-    window.addEventListener('load', fit);
-  }
-
-  /* ---------- Intro ---------- */
-  function intro() {
-    const go = () => {
-      body.classList.remove('is-loading');
-      body.classList.add('is-ready');
-      setTimeout(() => { const c = $('.curtain'); if (c) c.remove(); }, 1500);
-    };
-    if (reduced) { go(); return; }
-    const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-    Promise.race([fonts, new Promise((r) => setTimeout(r, 1500))]).then(() => setTimeout(go, 120));
-    setTimeout(() => { if (body.classList.contains('is-loading')) go(); }, 3500); // never trap the visitor
-  }
-
-  /* ---------- Scroll effects ---------- */
-  function scrollFx() {
-    const progress = $('.progress'), nav = $('.nav');
-    const heroMedia = $('.hero__media'), heroBottom = $('.hero__bottom'), word = $('[data-parallax]');
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const y = window.scrollY || 0, vh = window.innerHeight;
-      const max = document.documentElement.scrollHeight - vh;
-      if (progress) progress.style.transform = `scaleX(${max > 0 ? clamp(y / max, 0, 1) : 0})`;
-      if (nav) nav.classList.toggle('is-scrolled', y > 30);
-      if (!reduced && heroMedia) {
-        if (y < vh * 1.3) {
-          heroMedia.style.transform = `translate3d(0, ${(y * 0.28).toFixed(1)}px, 0)`;
-          if (heroBottom) {
-            heroBottom.style.transform = `translate3d(0, ${(y * 0.14).toFixed(1)}px, 0)`;
-            heroBottom.style.opacity = String(clamp(1 - y / (vh * 0.85), 0, 1));
-          }
-        }
-      }
-      if (!reduced && word) {
-        const r = word.getBoundingClientRect();
-        if (r.bottom > 0 && r.top < vh) {
-          const p = (r.top + r.height / 2 - vh / 2) / vh;
-          word.style.transform = `translate3d(${(-p * 10).toFixed(2)}vw, 0, 0)`;
-        }
-      }
-    };
-    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
-    window.addEventListener('resize', update);
-    update();
-  }
-
-  /* ---------- Reveal on scroll + counters ---------- */
-  const formatNumber = (n) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  function countUp(el) {
-    const target = parseFloat(el.dataset.count) || 0;
-    if (reduced) { el.textContent = formatNumber(target); return; }
-    const dur = 1500, start = performance.now();
-    const step = (now) => {
-      const t = clamp((now - start) / dur, 0, 1);
-      el.textContent = formatNumber(target * (1 - Math.pow(1 - t, 3)));
-      if (t < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }
-  function reveals() {
-    const targets = $$('.reveal, .line, .map, .footer__giant');
-    const counters = $$('[data-count]');
-    if (!('IntersectionObserver' in window)) {
-      targets.forEach((el) => el.classList.add('is-visible'));
-      counters.forEach(countUp);
-      return;
-    }
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); } });
-    }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
-    targets.forEach((el) => io.observe(el));
-    const cio = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { countUp(e.target); cio.unobserve(e.target); } });
-    }, { threshold: 0.5 });
-    counters.forEach((el) => cio.observe(el));
-  }
-
-  /* ---------- Custom cursor + magnetic buttons ---------- */
-  function cursor() {
-    const el = $('.cursor');
-    if (!el) return;
-    if (isTouch) { el.remove(); return; }
-    let tx = -100, ty = -100, x = tx, y = ty, raf = null, active = false;
-    const loop = () => {
-      x = lerp(x, tx, 0.2); y = lerp(y, ty, 0.2);
-      el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-      raf = Math.abs(tx - x) > 0.1 || Math.abs(ty - y) > 0.1 ? requestAnimationFrame(loop) : null;
-    };
-    window.addEventListener('pointermove', (e) => {
-      if (e.pointerType && e.pointerType !== 'mouse') return;
-      tx = e.clientX; ty = e.clientY;
-      if (!active) { active = true; x = tx; y = ty; el.classList.add('is-active'); }
-      if (!raf) raf = requestAnimationFrame(loop);
-    }, { passive: true });
-    document.addEventListener('mouseleave', () => { active = false; el.classList.remove('is-active'); });
-    const HOVER = 'a, button, summary, input, textarea, label, .cap, .show, .logcard';
-    document.addEventListener('pointerover', (e) => { if (e.target.closest && e.target.closest(HOVER)) el.classList.add('is-hover'); });
-    document.addEventListener('pointerout', (e) => {
-      if (!(e.target.closest && e.target.closest(HOVER))) return;
-      const to = e.relatedTarget;
-      if (!to || !(to.closest && to.closest(HOVER))) el.classList.remove('is-hover');
-    });
-  }
-  function magnetic() {
-    if (isTouch || reduced) return;
-    $$('.magnetic').forEach((btn) => {
-      btn.addEventListener('pointermove', (e) => {
-        const r = btn.getBoundingClientRect();
-        btn.style.setProperty('--bx', `${((e.clientX - (r.left + r.width / 2)) * 0.25).toFixed(1)}px`);
-        btn.style.setProperty('--by', `${((e.clientY - (r.top + r.height / 2)) * 0.25).toFixed(1)}px`);
-      });
-      btn.addEventListener('pointerleave', () => { btn.style.setProperty('--bx', '0px'); btn.style.setProperty('--by', '0px'); });
-    });
-  }
-
   /* ---------- Mobile nav ---------- */
   function mobileNav() {
     const nav = $('.nav'), burger = $('.nav__burger');
@@ -272,9 +97,8 @@
     burger.addEventListener('click', () => setOpen(!nav.classList.contains('is-open')));
     $$('.nav__links a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
-    window.matchMedia('(min-width: 761px)').addEventListener('change', (e) => { if (e.matches) setOpen(false); });
+    window.matchMedia('(min-width: 861px)').addEventListener('change', (e) => { if (e.matches) setOpen(false); });
   }
-
   /* ---------- Events: filter by organiser ---------- */
   function eventFilters() {
     const bar = $('.filters');
@@ -288,7 +112,6 @@
     // "4 events ↓" links in the career list pre-select that organiser
     $$('[data-filter-link]').forEach((a) => a.addEventListener('click', () => apply(a.dataset.filterLink)));
   }
-
   /* ---------- WhatsApp greeting bubble ---------- */
   function whatsapp() {
     const bubble = $('.wa-bubble');
@@ -310,18 +133,6 @@
     const wa = $('.wa');
     if (wa) wa.addEventListener('click', hide);
   }
-
-  /* ---------- Offer tabs (decorative toggle) ---------- */
-  function offerTabs() {
-    const tabs = $$('.offer__tabs button');
-    const kicker = $('.offer__kicker');
-    const base = kicker ? kicker.textContent : '';
-    tabs.forEach((t) => t.addEventListener('click', () => {
-      tabs.forEach((o) => { o.classList.toggle('is-on', o === t); o.setAttribute('aria-selected', String(o === t)); });
-      if (kicker) kicker.textContent = `${base} — ${t.textContent.toLowerCase()}`;
-    }));
-  }
-
   /* ---------- Images that fail to load keep a styled background ---------- */
   function imageFallbacks() {
     $$('img').forEach((img) => {
@@ -330,7 +141,6 @@
       img.addEventListener('error', mark);
     });
   }
-
   /* ---------- Contact form ---------- */
   function contactForm() {
     const form = $('.cform');
@@ -382,7 +192,6 @@
     const done = $('.cform__done', form);
     if (done) done.addEventListener('click', () => { form.classList.remove('is-sent'); setStatus(''); });
   }
-
   /* ---------- Visitor-record consent wall ---------- */
   function consent() {
     const el = $('.consent');
@@ -411,22 +220,24 @@
     setTimeout(() => { if (agree) agree.focus(); }, 600);
   }
 
+  /* ---------- World map: draw the routes once it scrolls into view ---------- */
+  function mapReveal() {
+    const map = $('.map');
+    if (!map) return;
+    if (!('IntersectionObserver' in window)) { map.classList.add('is-visible'); return; }
+    const io = new IntersectionObserver((entries) => { entries.forEach((e) => { if (e.isIntersecting) { map.classList.add('is-visible'); io.disconnect(); } }); }, { threshold: 0.2 });
+    io.observe(map);
+  }
+
   /* ---------- Boot ---------- */
   const init = () => {
-    clock();
-    heroName();
     hero();
-    reveals();
-    scrollFx();
-    cursor();
-    magnetic();
+    mapReveal();
     mobileNav();
-    offerTabs();
     eventFilters();
     whatsapp();
     imageFallbacks();
     contactForm();
-    intro();
     consent();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -16,48 +16,38 @@
   <link rel="preconnect" href="https://videos.pexels.com">
   <link rel="preconnect" href="https://images.pexels.com">
   <% } %>
-  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <%
   const logoFor = (key) => (key && logos && logos[key]) || null;
-  const logoOf = (x) => (x && x.logoUrl) || logoFor(x && x.logo); // uploaded logo wins over the built-in one
+  const logoOf = (x) => (x && x.logoUrl) || logoFor(x && x.logo);
   const initials = (name) => name.replace(/[^A-Za-z0-9 &]/g, '').split(/\s+/).filter(Boolean).slice(0, 3).map((w) => w[0]).join('').toUpperCase();
   const showCount = p.shows.length;
-  // Distinct countries; roadshows span several so they don't count as one (falls back to the stat).
   const countryStat = (p.stats || []).find((x) => /countr/i.test(x.label));
   const countries = countryStat ? countryStat.value : new Set(p.shows.map((s) => s.country).filter((c) => c && !/various|multiple/i.test(c))).size;
   const intro = Array.isArray(p.intro) ? p.intro : [p.intro];
   const byOrg = (id) => p.shows.filter((s) => s.organiser === id).length;
   const waHref = p.whatsapp ? `https://wa.me/${p.whatsapp}?text=${encodeURIComponent(p.whatsappText || '')}` : null;
+  const waIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z"/><path d="M9.2 8.4c.2-.4.4-.4.7-.4h.5c.2 0 .4 0 .6.4l.8 1.9c.1.2.1.4 0 .6l-.5.7c-.1.2-.2.3 0 .6a6.8 6.8 0 0 0 3 2.8c.3.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.9.9c.3.1.4.2.4.4a2.4 2.4 0 0 1-1.8 2.3c-1 .2-2.3-.1-4.1-1.3a10.5 10.5 0 0 1-3.6-4c-.6-1.2-.5-2.2-.1-2.9z" fill="currentColor" stroke="none"/></svg>';
 %>
-<body class="is-loading" data-tone="<%= video.tone || 'duotone' %>">
-
-  <div class="curtain" aria-hidden="true"></div>
-  <div class="cursor" aria-hidden="true"></div>
-  <div class="progress" aria-hidden="true"></div>
+<body data-tone="<%= video.tone || 'duotone' %>">
 
   <header class="nav">
-    <a href="#top" class="nav__brand" aria-label="<%= p.name %> — home">
-      <span class="nav__mark">UB</span>
-      <span class="nav__name"><%= p.name %></span>
-    </a>
-    <nav class="nav__links" aria-label="Primary">
-      <a href="#about">About</a>
-      <a href="#services">What I do</a>
-      <a href="#events">Events</a>
-      <a href="#contact">Contact</a>
-    </nav>
-    <div class="nav__right">
-      <span class="nav__clock mono" aria-label="Local time in London">LDN <span data-clock>--:--</span> <span data-tz>GMT</span></span>
-      <button class="nav__burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    <div class="wrap">
+      <a href="#top" class="nav__brand"><%= p.name %></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#about">About</a>
+        <a href="#services">What I do</a>
+        <a href="#events">Events</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <button class="nav__burger" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
     </div>
   </header>
 
   <main id="top">
-
-    <!-- ============ HERO ============ -->
-    <section class="hero" id="home">
+    <section class="hero" aria-label="Introduction">
       <div class="hero__media" aria-hidden="true">
         <canvas class="hero__canvas"></canvas>
         <video class="hero__video" muted playsinline autoplay loop preload="metadata"
@@ -69,272 +59,139 @@
         <div class="hero__lift"></div>
         <div class="hero__shade"></div>
       </div>
-
-      <div class="hero__bottom container">
-        <div class="hero__meta mono">
-          <span><%= p.title %> · <%= p.company %></span>
-          <span>London · <%= p.coords %></span>
-        </div>
-        <h1 class="hero__name" aria-label="<%= p.name %>">
-          <span class="hero__word" data-split><%= p.firstName.toUpperCase() %></span>
-          <span class="hero__word" data-split><%= p.lastName.toUpperCase() %></span>
-        </h1>
+      <div class="wrap">
+        <p class="hero__eyebrow"><%= p.title %> · <%= p.company %> · London</p>
+        <h1><%= p.firstName %><br><%= p.lastName %></h1>
       </div>
     </section>
 
-    <!-- ============ WHO I AM ============ -->
-    <section id="about" class="section about">
-      <div class="container">
-        <div class="section__bar"><span class="mono">// Who I am</span><span class="mono"><%= p.title %> · London</span></div>
-        <h2 class="lead reveal"><%= p.statement %></h2>
-
-        <div class="about__grid">
-          <figure class="about__figure reveal">
-            <% const portrait = p.portrait || {}; %><img src="<%= portrait.image || '/img/scenes/westminster.webp' %>" alt="<%= portrait.alt || '' %>" loading="lazy" width="1000" height="1250">
-            <% if (portrait.caption) { %><figcaption class="mono"><%= portrait.caption %></figcaption><% } %>
-          </figure>
-          <div class="about__side">
-            <div class="about__intro reveal"><% intro.forEach((para) => { %><p><%= para %></p><% }) %></div>
-            <dl class="facts reveal">
-              <% p.facts.forEach((f) => { %>
-                <div><dt class="mono"><%= f.label %></dt><dd><%= f.value %></dd></div>
+    <section class="world" aria-label="Where I have worked">
+      <div class="wrap">
+        <div class="map">
+          <svg class="map__svg" viewBox="0 0 <%= map.width %> <%= map.height %>" role="img" aria-label="World map of event locations">
+            <defs><radialGradient id="glow"><stop offset="0" stop-color="#1a47ff" stop-opacity=".9"/><stop offset="1" stop-color="#1a47ff" stop-opacity="0"/></radialGradient></defs>
+            <g class="map__dots"><% map.dots.forEach((d) => { %><circle cx="<%= d[0] %>" cy="<%= d[1] %>" r="2.1"/><% }) %></g>
+            <% const hq = map.cities.find((c) => c.hq); %>
+            <g class="map__routes">
+              <% if (hq) map.cities.filter((c) => !c.hq).forEach((c, i) => { const mx = (hq.x + c.x) / 2, my = Math.min(hq.y, c.y) - Math.hypot(c.x - hq.x, c.y - hq.y) * 0.35; %>
+                <path d="M<%= hq.x %>,<%= hq.y %> Q<%= mx.toFixed(1) %>,<%= my.toFixed(1) %> <%= c.x %>,<%= c.y %>" style="--i:<%= i %>"/>
               <% }) %>
-            </dl>
-            <div class="stats">
-              <% p.stats.forEach((s, i) => { %>
-                <div class="stat reveal" style="--d:<%= i * 0.08 %>s">
-                  <span class="stat__plus" aria-hidden="true">+</span>
-                  <strong class="stat__value"><span data-count="<%= s.value %>">0</span><%= s.suffix %></strong>
-                  <span class="stat__label"><%= s.label %></span>
-                </div>
+            </g>
+            <g class="map__cities">
+              <% map.cities.forEach((c, i) => { %>
+                <g class="city<%= c.hq ? ' city--hq' : '' %>" style="--i:<%= i %>" transform="translate(<%= c.x %>,<%= c.y %>)"><circle class="city__glow" r="18" fill="url(#glow)"/><circle class="city__pulse" r="5"/><circle class="city__dot" r="4"/></g>
               <% }) %>
-            </div>
+            </g>
+          </svg>
+          <div class="map__labels">
+            <% map.cities.forEach((c, i) => { const mods = (c.label || '').split(' ').filter(Boolean).map((m) => ' map__label--' + m).join(''); %>
+              <span class="map__label<%= c.hq ? ' map__label--hq' : '' %><%= mods %>" style="left:<%= (c.x / map.width * 100).toFixed(2) %>%;top:<%= (c.y / map.height * 100).toFixed(2) %>%;--i:<%= i %>"><%= c.name %></span>
+            <% }) %>
           </div>
         </div>
+        <div class="world__copy">
+          <h2>From London to <%= countries === 8 ? 'eight' : countries %> countries.</h2>
+          <p>Shows delivered or supported across the UK, the Netherlands, Italy, Türkiye, India, the United States, Ireland and South Africa.</p>
+          <div class="world__nums">
+            <% p.stats.forEach((s) => { %><div><strong><%= s.value %><%= s.suffix %></strong><span><%= s.label %></span></div><% }) %>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        <div class="career" id="career">
-          <div class="employers__head"><span class="mono">// Where I’ve worked</span><span class="mono">2012 → today · <%= p.employers.length %> organisers</span></div>
-          <ul class="career__list">
-            <% p.employers.forEach((e, i) => { const lg = logoOf(e); %>
-              <li class="crow reveal" style="--d:<%= i * 0.06 %>s">
-                <a class="crow__logo" href="<%= e.url %>" target="_blank" rel="noopener" aria-label="<%= e.name %> website"><% if (lg) { %><img src="<%= lg %>" alt="<%= e.name %> logo" loading="lazy"><% } else { %><span class="wordmark"><%= e.name %></span><% } %></a>
-                <div>
-                  <strong><%= e.name %><% if (e.sub) { %> <span class="crow__sub">· <%= e.sub %></span><% } %></strong>
-                  <span class="crow__role"><%= e.role %></span>
-                  <span class="crow__note"><%= e.note %></span>
-                </div>
-                <div class="crow__right">
-                  <span class="mono crow__period"><%= e.period %></span>
-                  <a class="crow__link" href="#events" data-filter-link="<%= e.id %>"><%= byOrg(e.id) %> event<%= byOrg(e.id) === 1 ? '' : 's' %> ↓</a>
-                </div>
-              </li>
+    <section id="about" class="sec">
+      <div class="wrap">
+        <div class="about">
+          <div><span class="kicker">About</span><h2 class="h2"><%= p.statement %></h2></div>
+          <div class="about__text"><% intro.forEach((para) => { %><p><%= para %></p><% }) %></div>
+        </div>
+        <dl class="facts">
+          <% p.facts.forEach((f) => { %><div><dt class="label"><%= f.label %></dt><dd><%= f.value %></dd></div><% }) %>
+        </dl>
+        <div class="orgs">
+          <span class="label">Worked with</span>
+          <div class="orgs__grid">
+            <% p.employers.forEach((e) => { const lg = logoOf(e); %>
+              <a class="org" href="#events" data-filter-link="<%= e.id %>" title="See the <%= byOrg(e.id) %> event<%= byOrg(e.id) === 1 ? '' : 's' %>">
+                <span class="org__logo"><% if (lg) { %><img src="<%= lg %>" alt="<%= e.name %>" loading="lazy"><% } else { %><span class="wordmark"><%= e.name %></span><% } %></span>
+                <strong><%= e.name %></strong>
+                <span><%= e.role %> · <%= e.period %></span>
+              </a>
             <% }) %>
-          </ul>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ============ WHAT I DO ============ -->
-    <section id="services" class="section services">
-      <div class="container">
-        <div class="section__bar"><span class="mono">// What I do</span><span class="mono">Show operations, end to end</span></div>
-        <h2 class="lead reveal"><%= p.servicesIntro %></h2>
-        <div class="services__grid">
-          <% p.services.forEach((s, i) => { %>
-            <article class="svc reveal" style="--d:<%= (i % 3) * 0.08 %>s">
-              <span class="mono svc__no">0<%= i + 1 %></span>
-              <h3><%= s.title %></h3>
-              <p><%= s.text %></p>
-            </article>
-          <% }) %>
-        </div>
-        <ul class="chips reveal" aria-label="Also">
-          <% p.alsoSkills.forEach((s) => { %><li><%= s %></li><% }) %>
-        </ul>
-        <div class="services__cta reveal">
-          <% if (waHref) { %><a class="btn btn--wa magnetic" href="<%= waHref %>" target="_blank" rel="noopener">Let’s chat on WhatsApp <span aria-hidden="true">↗</span></a><% } %>
-          <a class="btn btn--ghost magnetic" href="mailto:<%= p.email %>">Email me <span aria-hidden="true">↗</span></a>
+    <section id="services" class="sec" style="padding-top:0">
+      <div class="wrap">
+        <span class="kicker">What I do</span>
+        <h2 class="h2" style="max-width:16ch"><%= p.servicesIntro %></h2>
+        <div class="services">
+          <% p.services.forEach((s, i) => { %><div class="svc"><em>0<%= i + 1 %></em><h3><%= s.title %></h3><p><%= s.text %></p></div><% }) %>
         </div>
       </div>
     </section>
 
-    <!-- ============ EVENTS ============ -->
-    <section id="events" class="section events">
-      <div class="container">
-        <div class="section__bar"><span class="mono">// Events</span><span class="mono">2012 → <%= year %> · <%= showCount %> shows · <%= countries %> countries</span></div>
-        <h2 class="lead reveal">Every show I’ve worked on since 2012 — <em>newest first.</em></h2>
-        <p class="events__intro reveal">Tap any event for the venue, the dates and what I did there.</p>
-
-        <div class="filters reveal" role="group" aria-label="Filter events by organiser">
+    <section id="events" class="sec" style="padding-top:0">
+      <div class="wrap">
+        <div class="head">
+          <div><span class="kicker">Events</span><h2 class="h2">Every show since 2012.</h2></div>
+          <p class="meta"><%= showCount %> shows · <%= countries %> countries · newest first</p>
+        </div>
+        <div class="filters" role="group" aria-label="Filter events by organiser">
           <button type="button" class="is-on" data-filter="all" aria-pressed="true">All <span><%= showCount %></span></button>
-          <% p.employers.forEach((e) => { %>
-            <button type="button" data-filter="<%= e.id %>" aria-pressed="false"><%= e.name %> <span><%= byOrg(e.id) %></span></button>
-          <% }) %>
+          <% p.employers.forEach((e) => { %><button type="button" data-filter="<%= e.id %>" aria-pressed="false"><%= e.name %> <span><%= byOrg(e.id) %></span></button><% }) %>
         </div>
-
         <ul class="evt-grid">
-          <% p.shows.forEach((s, i) => { const lg = logoOf(s); const org = p.employers.find((e) => e.id === s.organiser); %>
-            <li data-org="<%= s.organiser %>" class="reveal" style="--d:<%= (i % 2) * 0.06 %>s">
+          <% p.shows.forEach((s) => { const lg = logoOf(s); const org = p.employers.find((e) => e.id === s.organiser); %>
+            <li data-org="<%= s.organiser %>">
               <a class="evt" href="/shows/<%= s.id %>">
                 <span class="evt__logo"><% if (lg) { %><img src="<%= lg %>" alt="" loading="lazy"><% } else { %><span class="initials"><%= initials(s.name) %></span><% } %></span>
-                <span>
-                  <strong><%= s.name %></strong>
-                  <span class="evt__where"><%= [s.venue, s.city].filter(Boolean).join(', ') %></span>
-                  <span class="evt__role"><%= s.role %><%= org ? ' · ' + org.name : '' %></span>
-                </span>
-                <span class="evt__right">
-                  <% if (s.years) { %><span class="mono"><%= s.years %></span><% } %>
-                  <span class="mono evt__go">Details →</span>
-                </span>
+                <span><strong><%= s.name %></strong><span class="evt__where"><%= [s.venue, s.city].filter(Boolean).join(', ') %><%= org ? ' · ' + org.name : '' %></span></span>
+                <span class="evt__year"><%= s.years || '' %></span>
+                <span class="evt__arr" aria-hidden="true">→</span>
               </a>
             </li>
           <% }) %>
         </ul>
-
-        <div class="events__map">
-          <div class="map reveal">
-            <svg class="map__svg" viewBox="0 0 <%= map.width %> <%= map.height %>" role="img" aria-label="World map of event locations">
-              <defs>
-                <radialGradient id="glow"><stop offset="0" stop-color="#1a47ff" stop-opacity=".9"/><stop offset="1" stop-color="#1a47ff" stop-opacity="0"/></radialGradient>
-              </defs>
-              <g class="map__dots"><% map.dots.forEach((d) => { %><circle cx="<%= d[0] %>" cy="<%= d[1] %>" r="2.1"/><% }) %></g>
-              <% const hq = map.cities.find((c) => c.hq); %>
-              <g class="map__routes">
-                <% map.cities.filter((c) => !c.hq).forEach((c, i) => {
-                     const mx = (hq.x + c.x) / 2, my = Math.min(hq.y, c.y) - Math.hypot(c.x - hq.x, c.y - hq.y) * 0.35; %>
-                  <path d="M<%= hq.x %>,<%= hq.y %> Q<%= mx.toFixed(1) %>,<%= my.toFixed(1) %> <%= c.x %>,<%= c.y %>" style="--i:<%= i %>"/>
-                <% }) %>
-              </g>
-              <g class="map__cities">
-                <% map.cities.forEach((c, i) => { %>
-                  <g class="city<%= c.hq ? ' city--hq' : '' %>" style="--i:<%= i %>" transform="translate(<%= c.x %>,<%= c.y %>)">
-                    <circle class="city__glow" r="18" fill="url(#glow)"/>
-                    <circle class="city__pulse" r="5"/>
-                    <circle class="city__dot" r="4"/>
-                  </g>
-                <% }) %>
-              </g>
-            </svg>
-            <div class="map__labels">
-              <% map.cities.forEach((c, i) => {
-                   const mods = (c.label || '').split(' ').filter(Boolean).map((m) => ' map__label--' + m).join(''); %>
-                <span class="map__label<%= c.hq ? ' map__label--hq' : '' %><%= mods %>" style="left:<%= (c.x / map.width * 100).toFixed(2) %>%;top:<%= (c.y / map.height * 100).toFixed(2) %>%;--i:<%= i %>"><%= c.name %></span>
-              <% }) %>
-            </div>
-          </div>
-          <p class="map__caption mono">Shows delivered or supported in eight countries — the UK, the Netherlands, Italy, Türkiye, India, the United States, Ireland and South Africa.</p>
-        </div>
       </div>
     </section>
 
-    <!-- ============ CONTACT ============ -->
-    <section id="contact" class="section contact">
-      <div class="container contact__grid">
-        <div class="contact__copy">
-          <span class="mono section__num">// Contact</span>
-          <h2 class="display reveal">Let’s talk about <em>your next show.</em></h2>
-          <p class="reveal">Planning an exhibition or conference, hiring, or just want to compare notes? The quickest way to reach me is WhatsApp.</p>
-          <div class="cactions reveal">
-            <% if (waHref) { %><a class="btn btn--wa magnetic" href="<%= waHref %>" target="_blank" rel="noopener">Let’s chat on WhatsApp <span aria-hidden="true">↗</span></a><% } %>
-            <div class="cactions__row">
-              <a class="btn btn--ghost magnetic" href="mailto:<%= p.email %>">Email me <span aria-hidden="true">↗</span></a>
-              <a class="btn btn--ghost magnetic" href="<%= p.linkedin %>" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span></a>
-            </div>
+    <section id="contact" class="sec contact">
+      <div class="wrap">
+        <div>
+          <span class="kicker">Contact</span>
+          <h2 class="h2">Let’s talk.</h2>
+          <p class="contact__lead">Planning a show, hiring, or want to compare notes? WhatsApp is the quickest way to reach me.</p>
+          <div class="btns">
+            <% if (waHref) { %><a class="btn" href="<%= waHref %>" target="_blank" rel="noopener"><%- waIcon %>Message on WhatsApp</a><% } %>
+            <a class="btn btn--o" href="mailto:<%= p.email %>">Email me</a>
           </div>
-          <ul class="contact__links reveal">
-            <li><span class="mono">Email</span><a href="mailto:<%= p.email %>"><%= p.email %></a></li>
-            <% if (p.phone) { %><li><span class="mono">Phone</span><a href="tel:<%= p.phone.replace(/[^+\d]/g, '') %>"><%= p.phone %></a></li><% } %>
-            <li><span class="mono">Based</span><span><%= p.area %></span></li>
-            <li><span class="mono">Hours</span><span>London time · <span data-clock>--:--</span> <span data-tz>GMT</span></span></li>
-          </ul>
+          <p class="contact__small"><a href="mailto:<%= p.email %>"><%= p.email %></a> · <a href="<%= p.linkedin %>" target="_blank" rel="noopener">LinkedIn</a> · <%= p.area %><% if (p.phone) { %> · <a href="tel:<%= p.phone.replace(/[^+\d]/g, '') %>"><%= p.phone %></a><% } %></p>
         </div>
-
-        <form class="cform reveal" novalidate>
-          <div class="cform__head mono"><span>Send a message</span><span>London, <span data-clock>--:--</span></span></div>
-          <label class="field"><input name="name" required placeholder=" " autocomplete="name"><span>Your name</span></label>
-          <label class="field"><input name="email" type="email" required placeholder=" " autocomplete="email"><span>Email</span></label>
-          <label class="field"><input name="company" placeholder=" " autocomplete="organization"><span>Company (optional)</span></label>
-          <label class="field"><textarea name="message" rows="4" required placeholder=" "></textarea><span>How can I help?</span></label>
+        <form class="cform" novalidate>
+          <label class="field"><span>Your name</span><input name="name" required autocomplete="name"></label>
+          <label class="field"><span>Email</span><input name="email" type="email" required autocomplete="email"></label>
+          <label class="field field--full"><span>Company (optional)</span><input name="company" autocomplete="organization"></label>
+          <label class="field field--full"><span>How can I help?</span><textarea name="message" rows="4" required></textarea></label>
           <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <button class="btn btn--block magnetic" type="submit"><span class="btn__label">Send message</span> <span aria-hidden="true">↗</span></button>
-          <p class="cform__status" role="status" aria-live="polite"></p>
-          <div class="cform__done" aria-hidden="true">
-            <span class="mono">Message received</span>
-            <strong class="cform__thanks">Thanks!</strong>
-            <span>I’ll be in touch shortly.</span>
-          </div>
+          <div class="cform__actions"><button class="btn" type="submit"><span class="btn__label">Send message</span></button><span class="cform__status" role="status" aria-live="polite"></span></div>
+          <div class="cform__done" aria-hidden="true"><strong class="cform__thanks">Thanks!</strong><span>I’ll be in touch shortly.</span></div>
         </form>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <div class="container footer__top">
-      <div class="footer__col">
-        <span class="mono">Menu</span>
-        <a href="#about">About</a><a href="#services">What I do</a><a href="#events">Events</a><a href="#contact">Contact</a><a href="/privacy">Privacy</a>
-      </div>
-      <div class="footer__col">
-        <span class="mono">Contact</span>
-        <a href="mailto:<%= p.email %>"><%= p.email %></a>
-        <% if (waHref) { %><a href="<%= waHref %>" target="_blank" rel="noopener">WhatsApp ↗</a><% } %>
-        <a href="<%= p.linkedin %>" target="_blank" rel="noopener">LinkedIn ↗</a>
-      </div>
-      <div class="footer__col">
-        <span class="mono">Location</span>
-        <span><%= p.area %></span>
-        <span><%= p.coords %></span>
-        <span>Local time <span data-clock>--:--</span> <span data-tz>GMT</span></span>
-      </div>
-      <div class="footer__col">
-        <span class="mono">Credits</span>
-        <span>Header film: <a href="<%= video.page %>" target="_blank" rel="noopener">“<%= video.title %>” via <%= video.credit %></a></span>
-        <span>Event logos belong to their respective organisers.</span>
-      </div>
-    </div>
-
-    <div class="footer__giant" aria-hidden="true">
-      <svg class="skyline" viewBox="0 0 1200 140" preserveAspectRatio="xMidYMax meet">
-        <g fill="#1c1e26">
-          <rect x="36" y="40" width="10" height="88"/><rect x="31" y="62" width="20" height="10"/>
-          <rect x="100" y="92" width="150" height="36"/><rect x="100" y="56" width="24" height="72"/><polygon points="168,92 176,70 184,92"/>
-          <rect x="236" y="50" width="14" height="78"/><polygon points="234,50 243,28 252,50"/>
-          <polygon points="300,128 330,72 360,128 352,128 330,86 308,128"/>
-          <rect x="420" y="100" width="70" height="28"/><path d="M430 100 A25 25 0 0 1 480 100 Z"/><rect x="452" y="66" width="6" height="12"/>
-          <rect x="560" y="48" width="16" height="80"/><rect x="585" y="30" width="30" height="98"/>
-          <path d="M625 128 C625 70 633 46 645 46 C657 46 665 70 665 128 Z"/>
-          <polygon points="672,128 700,44 700,128"/><rect x="708" y="50" width="16" height="78"/>
-          <path d="M735 128 L731 68 Q755 56 779 68 L775 128 Z"/>
-          <polygon points="800,128 826,10 852,128"/>
-          <rect x="900" y="34" width="20" height="94"/><rect x="990" y="34" width="20" height="94"/>
-          <polygon points="898,34 910,18 922,34"/><polygon points="988,34 1000,18 1012,34"/>
-          <rect x="920" y="56" width="70" height="5"/><rect x="920" y="70" width="70" height="5"/><rect x="870" y="104" width="170" height="6"/>
-          <rect x="1080" y="60" width="22" height="68"/><rect x="1110" y="46" width="28" height="82"/><polygon points="1110,46 1124,32 1138,46"/><rect x="1146" y="64" width="20" height="64"/>
-          <rect x="0" y="128" width="1200" height="12"/>
-        </g>
-        <g fill="none" stroke="#1c1e26" stroke-width="4"><circle cx="330" cy="72" r="46"/></g>
-        <rect x="0" y="127" width="1200" height="1.5" fill="rgba(26,71,255,.7)"/>
-      </svg>
-      <div class="footer__word"><span>U</span><span>M</span><span>I</span><span>T</span></div>
-    </div>
-
-    <div class="container footer__bottom">
-      <span>© <%= year %> <%= p.name %>. Web design by <%= p.name %> — all rights reserved.</span>
-      <span class="mono">Made in London</span>
-      <a href="#top" class="footer__up">Back to top ↑</a>
+    <div class="wrap">
+      <span>© <%= year %> <%= p.name %> · Web design by <%= p.name %> — all rights reserved.</span>
+      <nav aria-label="Footer"><a href="<%= p.linkedin %>" target="_blank" rel="noopener">LinkedIn</a><a href="/privacy">Privacy</a><a href="#top">Top ↑</a></nav>
     </div>
   </footer>
 
   <% if (waHref) { %>
-  <a class="wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="Chat with <%= p.firstName %> on WhatsApp">
-    <span class="wa__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z"/>
-        <path d="M9.2 8.4c.2-.4.4-.4.7-.4h.5c.2 0 .4 0 .6.4l.8 1.9c.1.2.1.4 0 .6l-.5.7c-.1.2-.2.3 0 .6a6.8 6.8 0 0 0 3 2.8c.3.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.9.9c.3.1.4.2.4.4a2.4 2.4 0 0 1-1.8 2.3c-1 .2-2.3-.1-4.1-1.3a10.5 10.5 0 0 1-3.6-4c-.6-1.2-.5-2.2-.1-2.9z" fill="#fff" stroke="none"/>
-      </svg>
-    </span>
-    <span class="wa__label">Let’s chat</span>
-  </a>
+  <a class="wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="Chat with <%= p.firstName %> on WhatsApp"><%- waIcon %><span class="wa__label">Let’s chat</span></a>
   <div class="wa-bubble" role="status">
     <button type="button" class="wa-bubble__close" aria-label="Dismiss">×</button>
     <strong>Hey, let’s talk.</strong>
@@ -342,26 +199,26 @@
   </div>
   <% } %>
 
-  <script src="/js/london-scene.js" defer></script>
   <div class="consent" hidden role="dialog" aria-modal="true" aria-labelledby="consent-title">
     <div class="consent__box">
       <div class="consent__step consent__step--ask">
-        <span class="mono accent">Before you continue</span>
+        <span class="kicker" style="margin-bottom:0">Before you continue</span>
         <h2 id="consent-title">This site records basic visitor details.</h2>
         <p>When you browse umitbozdag.com I record your <strong>IP address</strong>, <strong>browser type</strong> and approximate <strong>location (country and city)</strong>, so I can see who visits. Nothing is sold or passed to advertisers. Details are in the <a href="/privacy">privacy notice</a>.</p>
         <div class="consent__actions">
           <button type="button" class="btn" data-consent="agree">I agree — continue</button>
-          <button type="button" class="btn btn--ghost" data-consent="decline">I don’t agree</button>
+          <button type="button" class="btn btn--o" data-consent="decline">I don’t agree</button>
         </div>
       </div>
       <div class="consent__step consent__step--no">
-        <span class="mono accent">No problem</span>
+        <span class="kicker" style="margin-bottom:0">No problem</span>
         <h2>Without your agreement this site can’t be browsed.</h2>
         <p>You’re still welcome to get in touch directly: <a href="mailto:<%= p.email %>"><%= p.email %></a><% if (waHref) { %> or <a href="<%= waHref %>" target="_blank" rel="noopener">WhatsApp</a><% } %>.</p>
         <div class="consent__actions"><button type="button" class="btn" data-consent="back">Go back</button></div>
       </div>
     </div>
   </div>
+  <script src="/js/london-scene.js" defer></script>
   <script src="/js/main.js" defer></script>
 </body>
 </html>

@@ -11,49 +11,43 @@
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <%
   const lg = show.logoUrl || logos[show.logo] || null;
   const waHref = p.whatsapp ? `https://wa.me/${p.whatsapp}?text=${encodeURIComponent(p.whatsappText || '')}` : null;
   const where = [show.venue, show.city, show.country].filter(Boolean).join(' · ');
+  const initials = (name) => name.replace(/[^A-Za-z0-9 &]/g, '').split(/\s+/).filter(Boolean).slice(0, 3).map((w) => w[0]).join('').toUpperCase();
+  const waIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z"/><path d="M9.2 8.4c.2-.4.4-.4.7-.4h.5c.2 0 .4 0 .6.4l.8 1.9c.1.2.1.4 0 .6l-.5.7c-.1.2-.2.3 0 .6a6.8 6.8 0 0 0 3 2.8c.3.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.9.9c.3.1.4.2.4.4a2.4 2.4 0 0 1-1.8 2.3c-1 .2-2.3-.1-4.1-1.3a10.5 10.5 0 0 1-3.6-4c-.6-1.2-.5-2.2-.1-2.9z" fill="currentColor" stroke="none"/></svg>';
 %>
-<body class="is-loading subpage subpage--dark" data-tone="natural">
-  <div class="curtain" aria-hidden="true"></div>
-  <div class="cursor" aria-hidden="true"></div>
-  <div class="progress" aria-hidden="true"></div>
-
-  <header class="nav is-scrolled">
-    <a href="/" class="nav__brand" aria-label="<%= p.name %> — home">
-      <span class="nav__mark">UB</span>
-      <span class="nav__name"><%= p.name %></span>
-    </a>
-    <nav class="nav__links" aria-label="Primary">
-      <a href="/#about">About</a>
-      <a href="/#services">What I do</a>
-      <a href="/#events">Events</a>
-      <a href="/#contact">Contact</a>
-    </nav>
-    <div class="nav__right">
-      <span class="nav__clock mono" aria-label="Local time in London">LDN <span data-clock>--:--</span> <span data-tz>GMT</span></span>
-      <button class="nav__burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a href="/" class="nav__brand"><%= p.name %></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="/#about">About</a>
+        <a href="/#services">What I do</a>
+        <a href="/#events">Events</a>
+        <a href="/#contact">Contact</a>
+      </nav>
+      <button class="nav__burger" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
     </div>
   </header>
 
-  <main class="showpage">
+  <main>
     <section class="showhero">
-      <div class="container">
-        <a href="/#events" class="showhero__back mono">← All events</a>
+      <div class="wrap">
+        <a href="/#events" class="showhero__back">← All events</a>
         <div class="showhero__grid">
           <div class="showhero__logo"><% if (lg) { %><img src="<%= lg %>" alt="<%= show.name %> logo"><% } else { %><span class="wordmark"><%= show.name %></span><% } %></div>
-          <div class="showhero__copy">
-            <p class="mono showhero__kicker"><%= employer ? employer.name : '' %> · <%= show.role %></p>
-            <h1 class="display"><%= show.name %></h1>
+          <div>
+            <span class="kicker showhero__kicker"><%= employer ? employer.name : '' %><%= employer ? ' · ' : '' %><%= show.role %></span>
+            <h1><%= show.name %></h1>
             <p class="showhero__where"><%= where %><% if (show.dates) { %> · <%= show.dates %><% } else if (show.years) { %> · <%= show.years %><% } %></p>
-            <div class="showhero__actions">
-              <% if (show.url) { %><a class="btn" href="<%= show.url %>" target="_blank" rel="noopener">Event website <span aria-hidden="true">↗</span></a><% } %>
-              <a class="btn btn--ghost" href="/#contact">Get in touch <span aria-hidden="true">↗</span></a>
+            <div class="btns">
+              <% if (show.url) { %><a class="btn" href="<%= show.url %>" target="_blank" rel="noopener">Event website ↗</a><% } %>
+              <a class="btn btn--o" href="/#contact">Get in touch</a>
             </div>
           </div>
         </div>
@@ -61,86 +55,72 @@
     </section>
 
     <section class="showbody">
-      <div class="container showbody__grid">
-        <div class="showbody__main">
-          <% if (show.image) { %>
-            <figure class="showbody__figure reveal">
-              <img src="<%= show.image %>" alt="" loading="lazy">
-              <% if (lg) { %><span class="fcard__logo"><img src="<%= lg %>" alt=""></span><% } %>
-            </figure>
-          <% } %>
-          <p class="showbody__summary reveal"><%= show.summary %></p>
-          <% if (show.highlights && show.highlights.length) { %>
-            <ul class="highlights reveal"><% show.highlights.forEach((h) => { %><li><%= h %></li><% }) %></ul>
-          <% } %>
-          <h2 class="showbody__h2 reveal">What I did</h2>
-          <ul class="job__points showbody__points reveal"><% (show.responsibilities || []).forEach((r) => { %><li><%= r %></li><% }) %></ul>
+      <div class="wrap">
+        <div>
+          <% if (show.image) { %><figure class="showbody__figure"><img src="<%= show.image %>" alt="" loading="lazy"></figure><% } %>
+          <p class="showbody__summary"><%= show.summary %></p>
+          <% if (show.highlights && show.highlights.length) { %><ul class="highlights"><% show.highlights.forEach((h) => { %><li><%= h %></li><% }) %></ul><% } %>
+          <h2>What I did</h2>
+          <ul class="points"><% (show.responsibilities || []).forEach((r) => { %><li><%= r %></li><% }) %></ul>
           <% if (exp && exp.points && exp.points.length) { %>
-            <h2 class="showbody__h2 reveal">My role at <%= employer.name %> (<%= exp.period %>)</h2>
-            <p class="showbody__text reveal"><%= exp.summary %></p>
-            <ul class="job__points showbody__points reveal"><% exp.points.forEach((r) => { %><li><%= r %></li><% }) %></ul>
+            <h2>My role at <%= employer.name %> (<%= exp.period %>)</h2>
+            <p style="color:#2c2f36;margin-bottom:14px"><%= exp.summary %></p>
+            <ul class="points"><% exp.points.forEach((r) => { %><li><%= r %></li><% }) %></ul>
           <% } %>
         </div>
-        <aside class="showbody__side">
-          <dl class="facts facts--card reveal">
-            <% if (employer) { %><div><dt class="mono">Organiser</dt><dd><a href="<%= employer.url %>" target="_blank" rel="noopener"><%= employer.name %> ↗</a></dd></div><% } %>
-            <div><dt class="mono">My role</dt><dd><%= show.role %></dd></div>
-            <div><dt class="mono">Venue</dt><dd><%= show.venue %></dd></div>
-            <% if (show.city) { %><div><dt class="mono">Location</dt><dd><%= [show.city, show.country].filter(Boolean).join(', ') %></dd></div><% } %>
-            <% if (show.dates) { %><div><dt class="mono">Dates</dt><dd><%= show.dates %></dd></div><% } else if (show.years) { %><div><dt class="mono">Years</dt><dd><%= show.years %></dd></div><% } %>
-            <% if (show.url) { %><div><dt class="mono">Website</dt><dd><a href="<%= show.url %>" target="_blank" rel="noopener"><%= show.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') %> ↗</a></dd></div><% } %>
+        <aside>
+          <dl class="factcard">
+            <% if (employer) { %><div><dt>Organiser</dt><dd><a href="<%= employer.url %>" target="_blank" rel="noopener"><%= employer.name %> ↗</a></dd></div><% } %>
+            <div><dt>My role</dt><dd><%= show.role %></dd></div>
+            <div><dt>Venue</dt><dd><%= show.venue %></dd></div>
+            <% if (show.city) { %><div><dt>Location</dt><dd><%= [show.city, show.country].filter(Boolean).join(', ') %></dd></div><% } %>
+            <% if (show.dates) { %><div><dt>Dates</dt><dd><%= show.dates %></dd></div><% } else if (show.years) { %><div><dt>Years</dt><dd><%= show.years %></dd></div><% } %>
+            <% if (show.url) { %><div><dt>Website</dt><dd><a href="<%= show.url %>" target="_blank" rel="noopener"><%= show.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') %> ↗</a></dd></div><% } %>
           </dl>
-          <div class="sidecard reveal">
-            <span class="avatar" aria-hidden="true">UB</span>
+          <div class="sidecard">
             <strong><%= p.name %></strong>
             <span><%= p.title %>, <%= p.company %> · London</span>
-            <a class="btn btn--ghost" href="/#contact">Contact me <span aria-hidden="true">↗</span></a>
-            <% if (waHref) { %><a class="sidecard__wa" href="<%= waHref %>" target="_blank" rel="noopener">WhatsApp ↗</a><% } %>
+            <div class="btns">
+              <% if (waHref) { %><a class="btn" href="<%= waHref %>" target="_blank" rel="noopener"><%- waIcon %>WhatsApp</a><% } %>
+              <a class="btn btn--o" href="mailto:<%= p.email %>">Email</a>
+            </div>
           </div>
         </aside>
       </div>
     </section>
 
     <section class="shownav">
-      <div class="container">
+      <div class="wrap">
         <div class="shownav__pn">
-          <% if (prev) { %><a class="shownav__link" href="/shows/<%= prev.id %>"><span class="mono">← Newer</span><strong><%= prev.name %></strong></a><% } else { %><span></span><% } %>
-          <% if (next) { %><a class="shownav__link shownav__link--next" href="/shows/<%= next.id %>"><span class="mono">Older →</span><strong><%= next.name %></strong></a><% } %>
+          <% if (prev) { %><a class="shownav__link" href="/shows/<%= prev.id %>"><small>← Newer</small><strong><%= prev.name %></strong></a><% } else { %><span></span><% } %>
+          <% if (next) { %><a class="shownav__link shownav__link--next" href="/shows/<%= next.id %>"><small>Older →</small><strong><%= next.name %></strong></a><% } %>
         </div>
         <% if (related.length) { %>
-          <div class="employers__head"><span class="mono">// More with <%= employer ? employer.name : 'this organiser' %></span><a class="mono" href="/#events">All events →</a></div>
-          <div class="related">
+          <div class="related__head"><span class="label">More with <%= employer ? employer.name : 'this organiser' %></span><a href="/#events">All events →</a></div>
+          <ul class="evt-grid">
             <% related.forEach((r) => { const rl = r.logoUrl || logos[r.logo]; %>
-              <a class="showrow" href="/shows/<%= r.id %>">
-                <span class="showrow__logo"><% if (rl) { %><img src="<%= rl %>" alt=""><% } else { %><span class="initials"><%= r.name.split(/\s+/).slice(0, 3).map((w) => w[0]).join('').toUpperCase() %></span><% } %></span>
-                <div><strong><%= r.name %></strong><span class="showrow__venue"><%= r.venue %><%= r.city ? ', ' + r.city : '' %></span></div>
-                <div class="showrow__right"><% if (r.years) { %><span class="mono"><%= r.years %></span><% } %><span class="mono showrow__more"><span class="showrow__more-text">Details </span>→</span></div>
-              </a>
+              <li><a class="evt" href="/shows/<%= r.id %>">
+                <span class="evt__logo"><% if (rl) { %><img src="<%= rl %>" alt="" loading="lazy"><% } else { %><span class="initials"><%= initials(r.name) %></span><% } %></span>
+                <span><strong><%= r.name %></strong><span class="evt__where"><%= [r.venue, r.city].filter(Boolean).join(', ') %></span></span>
+                <span class="evt__year"><%= r.years || '' %></span>
+                <span class="evt__arr" aria-hidden="true">→</span>
+              </a></li>
             <% }) %>
-          </div>
+          </ul>
         <% } %>
       </div>
     </section>
   </main>
 
-  <footer class="footer footer--compact">
-    <div class="container footer__bottom">
-      <span>© <%= year %> <%= p.name %>. Web design by <%= p.name %> — all rights reserved.</span>
-      <a href="mailto:<%= p.email %>"><%= p.email %></a>
-      <a href="/" class="footer__up">umitbozdag.com →</a>
+  <footer class="footer">
+    <div class="wrap">
+      <span>© <%= year %> <%= p.name %> · Web design by <%= p.name %> — all rights reserved.</span>
+      <nav aria-label="Footer"><a href="mailto:<%= p.email %>"><%= p.email %></a><a href="/privacy">Privacy</a><a href="/">umitbozdag.com →</a></nav>
     </div>
   </footer>
 
   <% if (waHref) { %>
-  <a class="wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="Chat with <%= p.firstName %> on WhatsApp">
-    <span class="wa__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z"/>
-        <path d="M9.2 8.4c.2-.4.4-.4.7-.4h.5c.2 0 .4 0 .6.4l.8 1.9c.1.2.1.4 0 .6l-.5.7c-.1.2-.2.3 0 .6a6.8 6.8 0 0 0 3 2.8c.3.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.9.9c.3.1.4.2.4.4a2.4 2.4 0 0 1-1.8 2.3c-1 .2-2.3-.1-4.1-1.3a10.5 10.5 0 0 1-3.6-4c-.6-1.2-.5-2.2-.1-2.9z" fill="#fff" stroke="none"/>
-      </svg>
-    </span>
-    <span class="wa__label">Let’s chat</span>
-  </a>
+  <a class="wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="Chat with <%= p.firstName %> on WhatsApp"><%- waIcon %><span class="wa__label">Let’s chat</span></a>
   <div class="wa-bubble" role="status">
     <button type="button" class="wa-bubble__close" aria-label="Dismiss">×</button>
     <strong>Hey, let’s talk.</strong>
@@ -151,16 +131,16 @@
   <div class="consent" hidden role="dialog" aria-modal="true" aria-labelledby="consent-title">
     <div class="consent__box">
       <div class="consent__step consent__step--ask">
-        <span class="mono accent">Before you continue</span>
+        <span class="kicker" style="margin-bottom:0">Before you continue</span>
         <h2 id="consent-title">This site records basic visitor details.</h2>
         <p>When you browse umitbozdag.com I record your <strong>IP address</strong>, <strong>browser type</strong> and approximate <strong>location (country and city)</strong>, so I can see who visits. Nothing is sold or passed to advertisers. Details are in the <a href="/privacy">privacy notice</a>.</p>
         <div class="consent__actions">
           <button type="button" class="btn" data-consent="agree">I agree — continue</button>
-          <button type="button" class="btn btn--ghost" data-consent="decline">I don’t agree</button>
+          <button type="button" class="btn btn--o" data-consent="decline">I don’t agree</button>
         </div>
       </div>
       <div class="consent__step consent__step--no">
-        <span class="mono accent">No problem</span>
+        <span class="kicker" style="margin-bottom:0">No problem</span>
         <h2>Without your agreement this site can’t be browsed.</h2>
         <p>You’re still welcome to get in touch directly: <a href="mailto:<%= p.email %>"><%= p.email %></a><% if (waHref) { %> or <a href="<%= waHref %>" target="_blank" rel="noopener">WhatsApp</a><% } %>.</p>
         <div class="consent__actions"><button type="button" class="btn" data-consent="back">Go back</button></div>
