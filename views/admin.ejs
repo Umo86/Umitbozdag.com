@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin — <%= p.name %></title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<%= base %>/assets/admin.css">
+</head>
+<body class="adm" data-password-mode="<%= passwordMode %>" data-base="<%= base %>">
+  <aside class="side" id="side">
+    <div class="brand"><span class="mark">UB</span><div><strong><%= p.name %></strong><span>Site admin</span></div></div>
+    <nav class="side__nav" aria-label="Admin sections">
+      <span class="side__group">Overview</span>
+      <a href="#dashboard" data-nav="dashboard">Dashboard</a>
+      <span class="side__group">Content</span>
+      <a href="#shows" data-nav="shows">Events</a>
+      <a href="#employers" data-nav="employers">Organisers</a>
+      <a href="#profile" data-nav="profile">Who I am</a>
+      <a href="#contact" data-nav="contact">Contact details</a>
+      <a href="#facts" data-nav="facts">Facts</a>
+      <a href="#stats" data-nav="stats">Numbers</a>
+      <a href="#services" data-nav="services">What I do</a>
+      <a href="#skills" data-nav="skills">Skills chips</a>
+      <a href="#experience" data-nav="experience">Career history</a>
+      <a href="#credentials" data-nav="credentials">Credentials</a>
+      <a href="#testimonials" data-nav="testimonials">Testimonials</a>
+      <span class="side__group">Media &amp; look</span>
+      <a href="#media" data-nav="media">Photos &amp; logos</a>
+      <a href="#video" data-nav="video">Header video</a>
+      <a href="#cities" data-nav="cities">Map cities</a>
+      <span class="side__group">Inbox</span>
+      <a href="#visitors" data-nav="visitors">Visitors <span class="pill" data-count="visits"></span></a>
+      <a href="#messages" data-nav="messages">Messages <span class="pill" data-count="messages"></span></a>
+      <span class="side__group">System</span>
+      <a href="#settings" data-nav="settings">Backup &amp; settings</a>
+    </nav>
+    <div class="side__foot">
+      <a href="/" target="_blank" rel="noopener">View site ↗</a>
+      <form method="post" action="<%= base %>/logout"><button type="submit" class="linkbtn">Log out</button></form>
+    </div>
+  </aside>
+  <div class="side__scrim" data-close-side></div>
+  <main class="main">
+    <header class="top">
+      <button class="top__burger" type="button" aria-label="Open menu" data-open-side><span></span><span></span><span></span></button>
+      <h1 class="top__title" data-title>Dashboard</h1>
+      <span class="top__status" data-status>Loading…</span>
+    </header>
+    <% if (status.temporary) { %>
+      <div class="banner banner--warn"><strong>Temporary storage on this host.</strong> This Vercel preview can’t keep files, so anything saved or uploaded here disappears when the server restarts. On Hostinger (or any server with a writable disk) changes are permanent. Use <a href="#settings">Backup</a> to download your work.</div>
+    <% } else if (!status.writable) { %>
+      <div class="banner banner--warn"><strong>Read-only storage.</strong> The data folder isn’t writable, so changes can’t be saved. Check permissions on <code><%= status.dataDir %></code>.</div>
+    <% } %>
+    <div class="view" id="view"></div>
+  </main>
+  <div class="toast" data-toast role="status" aria-live="polite"></div>
+  <script src="<%= base %>/assets/admin.js" defer></script>
+</body>
+</html>

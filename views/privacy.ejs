@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Privacy notice — <%= p.name %></title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a href="/" class="nav__brand"><%= p.name %></a>
+      <nav class="nav__links" aria-label="Primary"><a href="/#about">About</a><a href="/#services">What I do</a><a href="/#events">Events</a><a href="/#contact">Contact</a></nav>
+      <button class="nav__burger" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    </div>
+  </header>
+  <main class="prose">
+    <span class="kicker">Privacy notice</span>
+    <h1>What this site records about visitors</h1>
+    <p>umitbozdag.com is the personal website of <%= p.name %>, London. When you agree to the notice shown on arrival and browse the site, the following details are recorded:</p>
+    <ul>
+      <li><strong>Your IP address</strong> — the network address your visit comes from.</li>
+      <li><strong>Your browser and device type</strong> — taken from the browser’s user-agent string (for example “Chrome on Windows, desktop”).</li>
+      <li><strong>Your approximate location</strong> — the country and city associated with your IP address, as reported by the hosting platform. This is never more precise than city level.</li>
+      <li>The page you opened, the site that referred you (if any), your browser language and the time of the visit.</li>
+    </ul>
+    <h2>Why</h2>
+    <p>To understand who visits the site — for example which countries and cities interest in my work comes from. The records are not used for advertising, profiling or marketing, and they are not sold or passed to third parties.</p>
+    <h2>Where it is kept and for how long</h2>
+    <p>Records are stored on the server that hosts this website and in its hosting provider’s logs, and are kept for up to 12 months before being deleted. Only <%= p.name %> has access to them.</p>
+    <h2>Your choice and your rights</h2>
+    <p>Nothing is recorded until you agree. If you don’t agree, the site can’t be browsed, but you can still get in touch directly. You can ask to see or delete any record relating to you at any time by emailing <a href="mailto:<%= p.email %>"><%= p.email %></a>. To withdraw your agreement in this browser, clear this site’s data in your browser settings.</p>
+    <h2>Contact form and WhatsApp</h2>
+    <p>Messages sent through the contact form are delivered to <%= p.name %> by email and used only to reply to you. The WhatsApp button opens a chat with <%= p.firstName %> in WhatsApp; WhatsApp’s own privacy policy then applies.</p>
+    <p><a href="/">← Back to the site</a></p>
+  </main>
+  <footer class="footer">
+    <div class="wrap">
+      <span>© <%= year %> <%= p.name %> · Web design by <%= p.name %> — all rights reserved.</span>
+      <nav aria-label="Footer"><a href="/">umitbozdag.com →</a></nav>
+    </div>
+  </footer>
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

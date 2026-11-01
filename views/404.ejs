@@ -2,23 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hall not found — <%= p.name %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Page not found — <%= p.name %></title>
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#07080c">
+  <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+  <header class="nav">
+    <div class="wrap">
+      <a href="/" class="nav__brand"><%= p.name %></a>
+      <nav class="nav__links" aria-label="Primary"><a href="/#about">About</a><a href="/#services">What I do</a><a href="/#events">Events</a><a href="/#contact">Contact</a></nav>
+      <button class="nav__burger" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    </div>
+  </header>
   <main class="notfound">
-    <span class="mono accent">Hall not found</span>
+    <span class="kicker">Page not found</span>
     <h1>404</h1>
-    <p class="notfound__text">This stand hasn’t been built. The page you’re looking for doesn’t exist on the floorplan.</p>
-    <p><a href="/" class="btn">Back to the entrance <span class="btn__arrow">→</span></a></p>
-    <p class="mono notfound__foot"><%= p.name %> · <%= p.title %></p>
+    <p>This stand hasn’t been built. The page you’re looking for isn’t on the floorplan.</p>
+    <a href="/" class="btn">Back to the home page</a>
   </main>
+  <script src="/js/main.js" defer></script>
 </body>
 </html>
