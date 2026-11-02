@@ -6,6 +6,7 @@ const compression = require('compression');
 const helmet = require('helmet');
 
 const store = require('./lib/store');
+const visits = require('./lib/visits');
 const { buildWorldMap } = require('./lib/worldmap');
 
 const crypto = require('crypto');
@@ -15,7 +16,8 @@ const PORT = process.env.PORT || 3000;
 const rawAdminPath = '/' + String(process.env.ADMIN_PATH || '/gs').replace(/^\/+|\/+$/g, '');
 const ADMIN_PATH = /^\/[\w.~-]+(\/[\w.~-]+)*$/.test(rawAdminPath) ? rawAdminPath : '/gs';
 const MESSAGES_FILE = path.join(store.DATA_DIR, 'messages.json');
-const VISITS_FILE = path.join(store.DATA_DIR, 'visits.json');
+const VISITS_FILE = path.join(store.DATA_DIR, 'visits.jsonl');
+const LEGACY_VISITS_FILE = path.join(store.DATA_DIR, 'visits.json');
 const LOCAL_VIDEOS = ['london.mp4', 'london.webm'].map((f) => path.join(__dirname, 'public', 'video', f));
 const TEMP_HOST = !!process.env.VERCEL; // read-only app folder: files written to /tmp don't survive
 
@@ -88,6 +90,7 @@ async function start() {
   store.load();
   console.log(`[content] loaded from ${store.status().loadedFrom}`);
   console.log(`[logos] ${Object.keys(findLogos()).length} built-in logo file(s) in public/img/logos`);
+  console.log(`[visits] ${visits.init({ file: VISITS_FILE, legacyFile: LEGACY_VISITS_FILE })} visit record(s) in ${VISITS_FILE}`);
 
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
@@ -120,6 +123,20 @@ async function start() {
   app.use(express.static(path.join(__dirname, 'public'), { maxAge: '7d', redirect: false }));
   app.use('/uploads', express.static(store.UPLOAD_DIR, { maxAge: '7d' }));
   app.use('/api', express.json({ limit: '20kb' }));
+
+  // ---- Visitor log: every public page view is recorded once the page has been sent ----
+  // (time, IP, browser, device, country/city, page, referrer, language — see lib/visits.js and /privacy).
+  // Admin pages, the API, prefetches and failed requests are not counted; the owner's own browsing is
+  // flagged (cookie set by the admin sign-in) and bots are flagged, so the dashboard can hide both.
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api/') || req.path === ADMIN_PATH || req.path.startsWith(ADMIN_PATH + '/')) return next();
+    if (/prefetch|prerender/i.test(req.get('sec-purpose') || req.get('purpose') || '')) return next();
+    res.on('finish', () => {
+      if (res.statusCode !== 200 || !/text\/html/.test(String(res.getHeader('content-type') || ''))) return;
+      visits.record(req).catch((err) => { if (!TEMP_HOST) console.error('[visit]', err.message); });
+    });
+    next();
+  });
 
   app.get('/', (req, res) => {
     const p = store.get();
@@ -204,55 +221,16 @@ async function start() {
     }
   }));
 
-  // ---- Visitor records (shown to the visitor in the consent banner and /privacy) ----
-  const parseUA = (ua) => {
-    const u = ua || '';
-    const browser = /Edg\//.test(u) ? 'Edge' : /OPR\/|Opera/.test(u) ? 'Opera' : /SamsungBrowser/.test(u) ? 'Samsung Internet'
-      : /Chrome\//.test(u) ? 'Chrome' : /Firefox\//.test(u) ? 'Firefox' : /Safari\//.test(u) && /Version\//.test(u) ? 'Safari'
-      : /MSIE|Trident/.test(u) ? 'Internet Explorer' : /bot|crawl|spider|slurp/i.test(u) ? 'Bot' : 'Other';
-    const os = /Windows/.test(u) ? 'Windows' : /iPhone|iPad|iPod/.test(u) ? 'iOS' : /Mac OS X/.test(u) ? 'macOS' : /Android/.test(u) ? 'Android' : /CrOS/.test(u) ? 'ChromeOS' : /Linux/.test(u) ? 'Linux' : 'Other';
-    const device = /iPad|Tablet/.test(u) ? 'tablet' : /Mobi|iPhone|Android/.test(u) ? 'mobile' : 'desktop';
-    return { browser, os, device };
-  };
-  const isPrivateIp = (ip) => !ip || /^(::1|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::ffff:(127|10|192\.168)\.|fc|fd)/.test(ip);
-  const visitRecent = new Map();
-  app.post('/api/visit', asyncRoute(async (req, res) => {
-    const ip = req.ip || '';
-    const now = Date.now();
-    for (const [k, t] of visitRecent) if (now - t > 60_000) visitRecent.delete(k);
-    if (visitRecent.has(ip) && now - visitRecent.get(ip) < 10_000) return res.json({ ok: true, skipped: true });
-    visitRecent.set(ip, now);
-    const ua = req.get('user-agent') || '';
-    const geo = {
-      country: req.get('x-vercel-ip-country') || req.get('cf-ipcountry') || null,
-      region: req.get('x-vercel-ip-country-region') || null,
-      city: null,
-    };
-    try { geo.city = req.get('x-vercel-ip-city') ? decodeURIComponent(req.get('x-vercel-ip-city')) : null; } catch { geo.city = req.get('x-vercel-ip-city') || null; }
-    // Optional lookup for hosts that provide no geo headers (e.g. Hostinger): GEOIP_PROVIDER=ipapi
-    if (!geo.country && process.env.GEOIP_PROVIDER === 'ipapi' && !isPrivateIp(ip)) {
-      try {
-        const r = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, { signal: AbortSignal.timeout(2500), headers: { 'user-agent': 'umitbozdag.com' } });
-        if (r.ok) { const j = await r.json(); geo.country = j.country_name || j.country || null; geo.region = j.region || null; geo.city = j.city || null; }
-      } catch { /* best effort */ }
-    }
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const entry = { at: new Date().toISOString(), ip, ...parseUA(ua), userAgent: ua.slice(0, 300), ...geo,
-      page: text(body.page, 200), referrer: text(body.referrer, 300), language: (req.get('accept-language') || '').split(',')[0].slice(0, 20), consent: true };
-    console.log('[visit]', JSON.stringify(entry));
-    try { await appendJsonList(VISITS_FILE, entry, 5000); } catch (err) { if (!TEMP_HOST) console.error('[visit]', err.message); }
-    res.json({ ok: true });
-  }));
-  // Read the records without signing in: GET /api/visits?key=<ADMIN_KEY>  (the admin panel shows them too)
-  app.get('/api/visits', asyncRoute(async (req, res) => {
+  // Read the raw visitor log without signing in: GET /api/visits?key=<ADMIN_KEY>  (the admin panel is the nicer view)
+  app.get('/api/visits', (req, res) => {
     const key = process.env.ADMIN_KEY;
     if (!key || typeof req.query.key !== 'string' || !safeEqual(req.query.key, key)) return res.status(404).render('404', { p: store.get() });
-    try { res.json(JSON.parse(await fsp.readFile(VISITS_FILE, 'utf8'))); } catch { res.json([]); }
-  }));
+    res.json(visits.all());
+  });
   app.get('/privacy', (req, res) => res.render('privacy', { p: store.get(), year: year() }));
 
   // ---- Admin panel (default /gs; set ADMIN_PATH to move it) ----
-  app.use(ADMIN_PATH, require('./lib/admin')({ store, visitsFile: VISITS_FILE, messagesFile: MESSAGES_FILE, findLogos, basePath: ADMIN_PATH }));
+  app.use(ADMIN_PATH, require('./lib/admin')({ store, visits, messagesFile: MESSAGES_FILE, findLogos, basePath: ADMIN_PATH }));
   console.log(`[admin] panel at ${ADMIN_PATH}`);
 
   app.use((req, res) => res.status(404).render('404', { p: store.get() }));

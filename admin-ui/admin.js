@@ -54,7 +54,7 @@
       newItem: () => ({ id: '', name: '', sub: '', url: '', role: '', period: '', note: '', logoUrl: '' }),
       fields: [F('name', 'Name'), F('id', 'Identifier (slug)', 'text', { hint: 'Leave empty to create it from the name. Changing it breaks the link to existing events.' }), F('sub', 'Second line (optional, e.g. Turkish Embassy in London)'), F('url', 'Website', 'url'), F('role', 'Your role there'), F('period', 'Period (e.g. 2023 — 2025)'), F('note', 'Shows worked on (short list)', 'textarea'), F('logoUrl', 'Logo', 'image', { kind: 'logo' })],
     },
-    profile: { title: 'Who I am', kind: 'object', fields: [F('name', 'Full name'), F('firstName', 'First name'), F('lastName', 'Last name'), F('title', 'Job title'), F('company', 'Company'), F('statement', 'One-line statement (top of “Who I am”)', 'textarea'), F('intro', 'Intro paragraphs (leave a blank line between paragraphs)', 'paragraphs'), F('location', 'Location'), F('area', 'Area shown in contact (e.g. Islington, London N1)'), F('coords', 'Coordinates line'), F('availability', 'Availability label'), F('portrait.image', 'About image', 'image', { kind: 'image' }), F('portrait.alt', 'Image description (alt text)'), F('portrait.caption', 'Image caption')] },
+    profile: { title: 'Who I am', kind: 'object', fields: [F('name', 'Full name'), F('firstName', 'First name'), F('lastName', 'Last name'), F('title', 'Job title'), F('company', 'Company'), F('statement', 'One-line statement (top of “Who I am”)', 'textarea'), F('worldLead', 'Map section text (under “From London to … countries”)', 'textarea'), F('intro', 'Intro paragraphs (leave a blank line between paragraphs)', 'paragraphs'), F('location', 'Location'), F('area', 'Area shown in contact (e.g. Islington, London N1)'), F('coords', 'Coordinates line'), F('availability', 'Availability label'), F('portrait.image', 'About image', 'image', { kind: 'image' }), F('portrait.alt', 'Image description (alt text)'), F('portrait.caption', 'Image caption')] },
     contact: { title: 'Contact details', kind: 'object', fields: [F('email', 'Email', 'email'), F('whatsapp', 'WhatsApp number (digits with country code, e.g. 447704050921)'), F('whatsappText', 'Pre-filled WhatsApp message'), F('phone', 'Phone (leave empty to keep it off the site)'), F('linkedin', 'LinkedIn URL', 'url'), F('website', 'Website URL', 'url')] },
     facts: { title: 'Facts', kind: 'list', key: 'facts', label: (f) => f.label, sub: (f) => f.value, newItem: () => ({ label: '', value: '' }), fields: [F('label', 'Label'), F('value', 'Value')] },
     stats: { title: 'Numbers', kind: 'list', key: 'stats', label: (s) => `${s.value}${s.suffix || ''}`, sub: (s) => s.label, newItem: () => ({ value: 0, suffix: '', label: '' }), fields: [F('value', 'Number', 'number'), F('suffix', 'Suffix (e.g. +)'), F('label', 'Label')] },
@@ -213,31 +213,66 @@
     $('form', view).addEventListener('submit', async (e) => { e.preventDefault(); try { await save(readForm($('form', view), {})); toast('Saved'); } catch (err) { toast(err.message, 'error'); } });
   }
 
+  /* ---------- visitors: shared pieces (dashboard + Visitors view) ---------- */
+  const vpref = (k) => { try { return localStorage.getItem(`ub-adm-${k}`) === '1'; } catch { return false; } };
+  const setVpref = (k, v) => { try { localStorage.setItem(`ub-adm-${k}`, v ? '1' : '0'); } catch { /* ignore */ } };
+  const vflags = () => `bots=${vpref('bots') ? 1 : 0}&own=${vpref('own') ? 1 : 0}`;
+  const fmtDay = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }); };
+  const where = (v) => [v.city, v.country].filter(Boolean).join(', ') || '—';
+  const refHost = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
+  const flagsOf = (v) => `${v.bot ? '<span class="tag">bot</span>' : ''}${v.own ? '<span class="tag">you</span>' : ''}`;
+  const vtoggles = (sum) => `<label class="check"><input type="checkbox" data-vpref="own" ${vpref('own') ? 'checked' : ''}> Include my own visits${sum && sum.hidden.own ? `<span class="count">${sum.hidden.own}</span>` : ''}</label><label class="check"><input type="checkbox" data-vpref="bots" ${vpref('bots') ? 'checked' : ''}> Include bots &amp; crawlers${sum && sum.hidden.bots ? `<span class="count">${sum.hidden.bots}</span>` : ''}</label>`;
+  const bindVtoggles = (rerender) => $$('[data-vpref]', view).forEach((cb) => cb.addEventListener('change', () => { setVpref(cb.dataset.vpref, cb.checked); rerender(); }));
+  const bars = (rows, total) => {
+    const max = Math.max(1, ...rows.map((r) => r[1]));
+    return `<div class="bars">${rows.map(([k, n]) => `<div class="bar" title="${esc(k)} — ${n} page view${n === 1 ? '' : 's'}${total ? ` (${Math.round((n / total) * 100)}%)` : ''}"><span>${esc(k)}</span><i style="width:${Math.max(2, Math.round((n / max) * 100))}%"></i><b>${n}</b></div>`).join('') || '<p class="empty">Nothing yet.</p>'}</div>`;
+  };
+  const chart = (daily) => {
+    const W = 600, H = 150, pad = 22, bw = 14, step = (W - 10) / daily.length;
+    const max = Math.max(1, ...daily.map((d) => d.views));
+    const y = (n) => H - pad - (n / max) * (H - pad - 12);
+    const bars_ = daily.map((d, i) => {
+      const x = 5 + i * step + (step - bw) / 2;
+      const label = (daily.length - 1 - i) % 7 === 0 ? `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle">${esc(fmtDay(d.day))}</text>` : '';
+      return `<g><title>${esc(fmtDay(d.day))} — ${d.visitors} visitor${d.visitors === 1 ? '' : 's'}, ${d.views} page view${d.views === 1 ? '' : 's'}</title><rect class="views" x="${x}" y="${y(d.views)}" width="${bw}" height="${H - pad - y(d.views)}" rx="3"/><rect class="visitors" x="${x}" y="${y(d.visitors)}" width="${bw}" height="${H - pad - y(d.visitors)}" rx="3"/>${label}</g>`;
+    }).join('');
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Visitors per day, last 30 days"><line x1="0" x2="${W}" y1="${H - pad + 0.5}" y2="${H - pad + 0.5}" class="axis"/><text x="${W - 2}" y="10" text-anchor="end">${max} / day</text>${bars_}</svg><div class="chart__key"><i class="visitors"></i>Visitors <i class="views"></i>Page views</div>`;
+  };
+  const visitRows = (rows, full) => (rows.length ? `<div class="tablewrap"><table class="table table--visits"><thead><tr><th>When</th><th>Where</th>${full ? '<th>IP</th>' : ''}<th>Browser &amp; device</th><th>Page</th>${full ? '<th>Came from</th><th>Lang</th>' : ''}</tr></thead><tbody>${rows.map((v) => `<tr><td class="nowrap">${esc(fmtDate(v.at))}</td><td>${esc(where(v))}${flagsOf(v)}</td>${full ? `<td class="mono">${esc(v.ip)}</td>` : ''}<td>${esc([v.browser, v.os, v.device].filter(Boolean).join(' · '))}</td><td class="mono" title="${esc(v.page || '/')}">${esc((v.page || '/').replace(/^\/shows\//, 'shows/').slice(0, 34))}</td>${full ? `<td class="mono" title="${esc(v.referrer || '')}">${esc(refHost(v.referrer) || '—')}</td><td class="mono">${esc(v.language || '')}</td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<p class="empty">No visits recorded yet. Every page someone opens on the public site is logged here automatically.</p>');
+  const visitTiles = (sum) => { const t = sum.totals; return `<div class="tiles">
+      <a class="tile" href="#visitors"><span>Visitors · last 24 hours</span><strong>${t.d1.visitors}</strong><span>${t.d1.views} page view${t.d1.views === 1 ? '' : 's'}</span></a>
+      <a class="tile" href="#visitors"><span>Visitors · 7 days</span><strong>${t.d7.visitors}</strong><span>${t.d7.views} page view${t.d7.views === 1 ? '' : 's'}</span></a>
+      <a class="tile" href="#visitors"><span>Visitors · 30 days</span><strong>${t.d30.visitors}</strong><span>${t.d30.views} page view${t.d30.views === 1 ? '' : 's'}</span></a>
+      <a class="tile" href="#visitors"><span>Countries</span><strong>${sum.countriesCount}</strong><span>${t.all.visitors} visitor${t.all.visitors === 1 ? '' : 's'} · ${t.all.views} views in total</span></a>
+    </div>`; };
+
   /* ---------- dashboard ---------- */
   async function renderDashboard() {
-    let visits = [];
-    try { visits = (await api('GET', `${BASE}/api/visits`)).visits || []; } catch { /* fine */ }
-    const day = 864e5, now = Date.now();
-    const last7 = visits.filter((v) => now - Date.parse(v.at) < 7 * day).length;
-    const today = visits.filter((v) => now - Date.parse(v.at) < day).length;
+    let sum = null, latest = [];
+    try { sum = await api('GET', `${BASE}/api/visits/summary?${vflags()}`); latest = (await api('GET', `${BASE}/api/visits?limit=10&${vflags()}`)).visits || []; } catch { /* shown below */ }
     const st = status || {};
     const storage = st.temporary ? ['is-warn', 'Temporary', 'Edits vanish when this preview restarts'] : st.writable ? ['is-ok', 'Saved to disk', st.lastSaved ? `Last change ${fmtDate(st.lastSaved)}` : 'Using the built-in content'] : ['is-warn', 'Read-only', 'Changes cannot be saved'];
     view.innerHTML = `
+      ${sum ? visitTiles(sum) : '<p class="empty">The visitor log could not be loaded.</p>'}
+      ${sum ? `<div class="grid grid--2-1">
+        <div class="card"><div class="card__head"><h2>Visitors — last 30 days</h2><div class="toolbar">${vtoggles(sum)}</div></div>${chart(sum.daily)}</div>
+        <div class="card"><h3>Top countries</h3>${bars(sum.countries, sum.total)}</div>
+      </div>
+      <div class="grid grid--3">
+        <div class="card"><h3>Top cities</h3>${bars(sum.cities, sum.total)}</div>
+        <div class="card"><h3>Most viewed pages</h3>${bars(sum.pages, sum.total)}</div>
+        <div class="card"><h3>Devices &amp; browsers</h3>${bars([...sum.devices, ...sum.browsers.slice(0, 4)], sum.total)}</div>
+      </div>
+      <div class="card"><div class="card__head"><h2>Latest visitors</h2><a class="linkbtn" href="#visitors">All visitors →</a></div>${visitRows(latest, false)}</div>` : ''}
       <div class="tiles">
         <a class="tile" href="#shows"><span>Events</span><strong>${content.shows.length}</strong><span>${content.shows.filter((s) => s.featured).length} featured</span></a>
         <a class="tile" href="#employers"><span>Organisers</span><strong>${content.employers.length}</strong><span>${content.experience.length} career roles</span></a>
-        <a class="tile" href="#visitors"><span>Visitors</span><strong>${last7}</strong><span>last 7 days · ${today} today · ${visits.length} total</span></a>
         <a class="tile" href="#messages"><span>Messages</span><strong>${counts.messages || 0}</strong><span>saved from the contact form</span></a>
-      </div>
-      <div class="tiles">
         <div class="tile ${storage[0]}"><span>Storage</span><strong>${storage[1]}</strong><span>${esc(storage[2])}</span></div>
-        <div class="tile"><span>Password</span><strong style="font-size:1.1rem">${passwordMode === 'env' ? 'From host settings' : 'Stored on server'}</strong><span>${passwordMode === 'env' ? 'ADMIN_PASSWORD variable' : 'Change it under Backup & settings'}</span></div>
-        <div class="tile"><span>Contact form</span><strong style="font-size:1.1rem">${counts.messages ? 'Saving to file' : 'See README'}</strong><span>Emails go out when SMTP is set</span></div>
-        <div class="tile"><span>Public site</span><strong style="font-size:1.1rem"><a href="/" target="_blank" rel="noopener">Open ↗</a></strong><span>${esc(content.name)} · ${esc(content.title)}</span></div>
       </div>
-      <div class="card"><div class="card__head"><h2>Quick actions</h2></div><div class="quick"><a class="btn" href="#shows" data-quick-add>+ Add an event</a><a class="btn btn--ghost" href="#media">Upload photos</a><a class="btn btn--ghost" href="#profile">Edit “Who I am”</a><a class="btn btn--ghost" href="${BASE}/api/export">Download backup</a></div></div>
-      <div class="card"><div class="card__head"><h2>Latest visitors</h2><a class="linkbtn" href="#visitors">All visitors →</a></div>${visits.length ? `<div class="tablewrap"><table class="table"><thead><tr><th>When</th><th>Where</th><th>Browser</th><th>Page</th></tr></thead><tbody>${visits.slice(-8).reverse().map((v) => `<tr><td>${esc(fmtDate(v.at))}</td><td>${esc([v.city, v.country].filter(Boolean).join(', ') || '—')}</td><td>${esc([v.browser, v.os, v.device].filter(Boolean).join(' · '))}</td><td class="mono">${esc(v.page || '/')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">No visits recorded yet.</p>'}</div>`;
+      <div class="card"><div class="card__head"><h2>Quick actions</h2></div><div class="quick"><a class="btn" href="#shows" data-quick-add>+ Add an event</a><a class="btn btn--ghost" href="#media">Upload photos</a><a class="btn btn--ghost" href="#profile">Edit “Who I am”</a><a class="btn btn--ghost" href="/" target="_blank" rel="noopener">Open the site ↗</a><a class="btn btn--ghost" href="${BASE}/api/export">Download backup</a></div></div>`;
     $('[data-quick-add]', view).addEventListener('click', () => setTimeout(() => { const b = $('[data-add]', view); if (b) b.click(); }, 50));
+    bindVtoggles(renderDashboard);
   }
 
   /* ---------- media ---------- */
@@ -264,24 +299,36 @@
   }
 
   /* ---------- visitors ---------- */
-  async function renderVisitors() {
-    const { visits = [] } = await api('GET', `${BASE}/api/visits`);
-    const day = 864e5, now = Date.now();
-    const tally = (key) => { const m = new Map(); visits.forEach((v) => { const k = v[key] || 'Unknown'; m.set(k, (m.get(k) || 0) + 1); }); return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8); };
-    const bars = (rows) => { const max = Math.max(1, ...rows.map((r) => r[1])); return `<div class="bars">${rows.map(([k, n]) => `<div class="bar"><span>${esc(k)}</span><i style="width:${Math.round((n / max) * 100)}%"></i><b>${n}</b></div>`).join('') || '<p class="empty">No data yet.</p>'}</div>`; };
+  async function renderVisitors(state = {}) {
+    const q = state.q || '', limit = state.limit || 100;
+    const [sum, res] = await Promise.all([api('GET', `${BASE}/api/visits/summary?${vflags()}`), api('GET', `${BASE}/api/visits?limit=${limit}&q=${encodeURIComponent(q)}&${vflags()}`)]);
+    const rows = res.visits || [];
     view.innerHTML = `
-      <div class="tiles"><div class="tile"><span>Total visits</span><strong>${visits.length}</strong><span>since logging began</span></div><div class="tile"><span>Last 24 hours</span><strong>${visits.filter((v) => now - Date.parse(v.at) < day).length}</strong><span>unique by IP: ${new Set(visits.filter((v) => now - Date.parse(v.at) < day).map((v) => v.ip)).size}</span></div><div class="tile"><span>Last 7 days</span><strong>${visits.filter((v) => now - Date.parse(v.at) < 7 * day).length}</strong><span>unique by IP: ${new Set(visits.filter((v) => now - Date.parse(v.at) < 7 * day).map((v) => v.ip)).size}</span></div><div class="tile"><span>Countries</span><strong>${new Set(visits.map((v) => v.country).filter(Boolean)).size}</strong><span>with a known location</span></div></div>
-      <div class="tiles" style="grid-template-columns:repeat(3,1fr)"><div class="card"><h3>Top countries</h3>${bars(tally('country'))}</div><div class="card"><h3>Top cities</h3>${bars(tally('city'))}</div><div class="card"><h3>Browsers</h3>${bars(tally('browser'))}</div></div>
-      <div class="card"><div class="card__head"><h2>Latest 200 visits</h2><div class="quick"><button type="button" class="btn btn--ghost btn--small" data-csv>Download CSV</button><button type="button" class="btn btn--danger btn--small" data-clear>Clear log</button></div></div>
-      ${visits.length ? `<div class="tablewrap"><table class="table"><thead><tr><th>When</th><th>IP</th><th>Country</th><th>City</th><th>Browser</th><th>Device</th><th>Page</th><th>Referrer</th></tr></thead><tbody>${visits.slice(-200).reverse().map((v) => `<tr><td>${esc(fmtDate(v.at))}</td><td class="mono">${esc(v.ip)}</td><td>${esc(v.country || '—')}</td><td>${esc(v.city || '—')}</td><td>${esc([v.browser, v.os].filter(Boolean).join(' · '))}</td><td>${esc(v.device || '')}</td><td class="mono">${esc(v.page || '/')}</td><td class="mono">${esc((v.referrer || '').replace(/^https?:\/\//, '').slice(0, 40))}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">No visits recorded yet. Visits are logged after a visitor accepts the banner.</p>'}
-      <p class="hint">Location comes from the host’s geo headers, or from ipapi.co when GEOIP_PROVIDER=ipapi is set. Records are kept in ${esc((status || {}).dataDir || 'the data folder')}/visits.json (newest 5,000).</p></div>`;
-    $('[data-csv]', view).addEventListener('click', () => {
-      const cols = ['at', 'ip', 'country', 'region', 'city', 'browser', 'os', 'device', 'page', 'referrer', 'language', 'userAgent'];
-      const cell = (v) => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
-      const csv = [cols.join(','), ...visits.map((v) => cols.map((c) => cell(v[c])).join(','))].join('\n');
-      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `visits-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    });
-    $('[data-clear]', view).addEventListener('click', async () => { if (!confirm('Delete the whole visitor log?')) return; try { await api('POST', `${BASE}/api/visits/clear`, {}); toast('Log cleared'); absorb(await api('GET', `${BASE}/api/status`)); renderVisitors(); } catch (e) { toast(e.message, 'error'); } });
+      <div class="card"><div class="toolbar"><input type="search" placeholder="Search IP, country, city, page…" value="${esc(q)}" data-vsearch aria-label="Search visits">${vtoggles(sum)}<span class="toolbar__spacer"></span><a class="btn btn--ghost btn--small" href="${BASE}/api/visits.csv?${vflags()}">Download CSV</a><button type="button" class="btn btn--danger btn--small" data-clear>Clear log</button></div></div>
+      ${visitTiles(sum)}
+      <div class="card"><div class="card__head"><h2>Visitors — last 30 days</h2><span class="hint" style="margin:0">Visitors are counted once per device (IP + browser). Page views count every page opened.</span></div>${chart(sum.daily)}</div>
+      <div class="grid grid--4">
+        <div class="card"><h3>Countries</h3>${bars(sum.countries, sum.total)}</div>
+        <div class="card"><h3>Cities</h3>${bars(sum.cities, sum.total)}</div>
+        <div class="card"><h3>Pages</h3>${bars(sum.pages, sum.total)}</div>
+        <div class="card"><h3>Came from</h3>${bars(sum.referrers, sum.total)}<p class="hint">Direct visits (typed address, bookmarks, most apps) have no referrer.</p></div>
+        <div class="card"><h3>Browsers</h3>${bars(sum.browsers, sum.total)}</div>
+        <div class="card"><h3>Operating systems</h3>${bars(sum.os, sum.total)}</div>
+        <div class="card"><h3>Devices</h3>${bars(sum.devices, sum.total)}</div>
+        <div class="card"><h3>Languages</h3>${bars(sum.languages, sum.total)}</div>
+      </div>
+      <div class="card"><div class="card__head"><h2>${q ? `Matches for “${esc(q)}”` : 'Latest visits'}<span class="count">${res.total}</span></h2>${res.total > rows.length ? `<button type="button" class="btn btn--ghost btn--small" data-more>Show ${Math.min(res.total - rows.length, 200)} more</button>` : ''}</div>
+      ${visitRows(rows, true)}
+      <p class="hint">Recorded on the server for every public page view — no banner, no cookies for visitors. Location comes from the host’s geo headers (Vercel, Cloudflare) or from ipapi.co for the visitor’s IP address (set GEOIP_PROVIDER=off to disable). Your own visits are recognised by a cookie set when you sign in here. Kept in ${esc((status || {}).dataDir || 'the data folder')}/visits.jsonl, newest 20,000.</p></div>`;
+    const search = $('[data-vsearch]', view);
+    let t;
+    search.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => renderVisitors({ q: search.value.trim(), limit }), 350); });
+    search.addEventListener('keydown', (e) => { if (e.key === 'Enter') { clearTimeout(t); renderVisitors({ q: search.value.trim(), limit }); } });
+    if (q) { search.focus(); search.setSelectionRange(q.length, q.length); }
+    const more = $('[data-more]', view);
+    if (more) more.addEventListener('click', () => renderVisitors({ q, limit: limit + 200 }));
+    bindVtoggles(() => renderVisitors({ q, limit }));
+    $('[data-clear]', view).addEventListener('click', async () => { if (!confirm('Delete the whole visitor log? This cannot be undone.')) return; try { await api('POST', `${BASE}/api/visits/clear`, {}); toast('Log cleared'); absorb(await api('GET', `${BASE}/api/status`)); renderVisitors(); } catch (e) { toast(e.message, 'error'); } });
   }
 
   /* ---------- messages ---------- */

@@ -67,34 +67,41 @@
 
     <section class="world" aria-label="Where I have worked">
       <div class="wrap">
+        <div class="world__head">
+          <div>
+            <span class="kicker">Where I’ve worked</span>
+            <h2 class="h2">From London to <%= countries === 8 ? 'eight' : countries %> countries.</h2>
+          </div>
+          <p class="world__lead"><%= p.worldLead || 'Exhibitions and conferences delivered or supported on four continents, from a base in London.' %></p>
+        </div>
+        <% const cityId = (c) => c.name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); const hq = map.cities.find((c) => c.hq); %>
         <div class="map">
-          <svg class="map__svg" viewBox="0 0 <%= map.width %> <%= map.height %>" role="img" aria-label="World map of event locations">
-            <defs><radialGradient id="glow"><stop offset="0" stop-color="#1a47ff" stop-opacity=".9"/><stop offset="1" stop-color="#1a47ff" stop-opacity="0"/></radialGradient></defs>
+          <svg class="map__svg" viewBox="0 0 <%= map.width %> <%= map.height %>" preserveAspectRatio="xMidYMid slice" role="img" aria-label="World map of event locations">
             <g class="map__dots"><% map.dots.forEach((d) => { %><circle cx="<%= d[0] %>" cy="<%= d[1] %>" r="2.1"/><% }) %></g>
-            <% const hq = map.cities.find((c) => c.hq); %>
             <g class="map__routes">
               <% if (hq) map.cities.filter((c) => !c.hq).forEach((c, i) => { const mx = (hq.x + c.x) / 2, my = Math.min(hq.y, c.y) - Math.hypot(c.x - hq.x, c.y - hq.y) * 0.35; %>
-                <path d="M<%= hq.x %>,<%= hq.y %> Q<%= mx.toFixed(1) %>,<%= my.toFixed(1) %> <%= c.x %>,<%= c.y %>" style="--i:<%= i %>"/>
+                <path d="M<%= hq.x %>,<%= hq.y %> Q<%= mx.toFixed(1) %>,<%= my.toFixed(1) %> <%= c.x %>,<%= c.y %>" data-city="<%= cityId(c) %>" style="--i:<%= i %>"/>
               <% }) %>
             </g>
             <g class="map__cities">
               <% map.cities.forEach((c, i) => { %>
-                <g class="city<%= c.hq ? ' city--hq' : '' %>" style="--i:<%= i %>" transform="translate(<%= c.x %>,<%= c.y %>)"><circle class="city__glow" r="18" fill="url(#glow)"/><circle class="city__pulse" r="5"/><circle class="city__dot" r="4"/></g>
+                <g class="city<%= c.hq ? ' city--hq' : '' %>" data-city="<%= cityId(c) %>" style="--i:<%= i %>" transform="translate(<%= c.x %>,<%= c.y %>)"><circle class="city__pulse" r="5"/><circle class="city__dot" r="4.5"/></g>
               <% }) %>
             </g>
           </svg>
           <div class="map__labels">
             <% map.cities.forEach((c, i) => { const mods = (c.label || '').split(' ').filter(Boolean).map((m) => ' map__label--' + m).join(''); %>
-              <span class="map__label<%= c.hq ? ' map__label--hq' : '' %><%= mods %>" style="left:<%= (c.x / map.width * 100).toFixed(2) %>%;top:<%= (c.y / map.height * 100).toFixed(2) %>%;--i:<%= i %>"><%= c.name %></span>
+              <span class="map__label<%= c.hq ? ' map__label--hq' : '' %><%= mods %>" data-city="<%= cityId(c) %>" data-x="<%= c.x %>" data-y="<%= c.y %>" style="left:<%= (c.x / map.width * 100).toFixed(2) %>%;top:<%= (c.y / map.height * 100).toFixed(2) %>%;--i:<%= i %>"><%= c.name %></span>
             <% }) %>
           </div>
         </div>
-        <div class="world__copy">
-          <h2>From London to <%= countries === 8 ? 'eight' : countries %> countries.</h2>
-          <p>Shows delivered or supported across the UK, the Netherlands, Italy, Türkiye, India, the United States, Ireland and South Africa.</p>
-          <div class="world__nums">
-            <% p.stats.forEach((s) => { %><div><strong><%= s.value %><%= s.suffix %></strong><span><%= s.label %></span></div><% }) %>
-          </div>
+        <ul class="world__cities" aria-label="Cities">
+          <% [...map.cities].sort((x, y) => x.x - y.x).forEach((c) => { %>
+            <li><button type="button" class="world__city<%= c.hq ? ' is-hq' : '' %>" data-city-btn="<%= cityId(c) %>"><i></i><%= c.name %><% if (c.hq) { %><small>Base</small><% } %></button></li>
+          <% }) %>
+        </ul>
+        <div class="world__nums">
+          <% p.stats.forEach((s) => { %><div><strong><%= s.value %><%= s.suffix %></strong><span><%= s.label %></span></div><% }) %>
         </div>
       </div>
     </section>
@@ -199,25 +206,6 @@
   </div>
   <% } %>
 
-  <div class="consent" hidden role="dialog" aria-modal="true" aria-labelledby="consent-title">
-    <div class="consent__box">
-      <div class="consent__step consent__step--ask">
-        <span class="kicker" style="margin-bottom:0">Before you continue</span>
-        <h2 id="consent-title">This site records basic visitor details.</h2>
-        <p>When you browse umitbozdag.com I record your <strong>IP address</strong>, <strong>browser type</strong> and approximate <strong>location (country and city)</strong>, so I can see who visits. Nothing is sold or passed to advertisers. Details are in the <a href="/privacy">privacy notice</a>.</p>
-        <div class="consent__actions">
-          <button type="button" class="btn" data-consent="agree">I agree — continue</button>
-          <button type="button" class="btn btn--o" data-consent="decline">I don’t agree</button>
-        </div>
-      </div>
-      <div class="consent__step consent__step--no">
-        <span class="kicker" style="margin-bottom:0">No problem</span>
-        <h2>Without your agreement this site can’t be browsed.</h2>
-        <p>You’re still welcome to get in touch directly: <a href="mailto:<%= p.email %>"><%= p.email %></a><% if (waHref) { %> or <a href="<%= waHref %>" target="_blank" rel="noopener">WhatsApp</a><% } %>.</p>
-        <div class="consent__actions"><button type="button" class="btn" data-consent="back">Go back</button></div>
-      </div>
-    </div>
-  </div>
   <script src="/js/london-scene.js" defer></script>
   <script src="/js/main.js" defer></script>
 </body>

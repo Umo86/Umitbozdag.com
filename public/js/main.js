@@ -124,8 +124,7 @@
       try { sessionStorage.setItem('ub-wa', '1'); } catch { /* ignore */ }
       setTimeout(() => bubble.remove(), 600);
     };
-    const show = () => { if (body.classList.contains('consent-pending')) setTimeout(show, 1500); else bubble.classList.add('is-on'); };
-    setTimeout(show, 5000);
+    setTimeout(() => bubble.classList.add('is-on'), 5000);
     const close = $('.wa-bubble__close', bubble);
     if (close) close.addEventListener('click', (e) => { e.preventDefault(); hide(); });
     const link = $('a', bubble);
@@ -192,53 +191,56 @@
     const done = $('.cform__done', form);
     if (done) done.addEventListener('click', () => { form.classList.remove('is-sent'); setStatus(''); });
   }
-  /* ---------- Visitor-record consent wall ---------- */
-  function consent() {
-    const el = $('.consent');
-    if (!el) return;
-    const KEY = 'ub-consent';
-    let state = null;
-    try { state = localStorage.getItem(KEY); } catch { /* storage blocked */ }
-    const logVisit = () => {
-      try { if (sessionStorage.getItem('ub-visit')) return; sessionStorage.setItem('ub-visit', '1'); } catch { /* ignore */ }
-      fetch('/api/visit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
-        body: JSON.stringify({ page: location.pathname, referrer: document.referrer }) }).catch(() => {});
-    };
-    if (state === 'yes') { el.remove(); logVisit(); return; }
-    el.hidden = false;
-    body.classList.add('consent-pending');
-    const agree = $('[data-consent="agree"]', el), decline = $('[data-consent="decline"]', el), back = $('[data-consent="back"]', el);
-    if (agree) agree.addEventListener('click', () => {
-      try { localStorage.setItem(KEY, 'yes'); } catch { /* ignore */ }
-      body.classList.remove('consent-pending');
-      el.classList.add('is-closing');
-      setTimeout(() => el.remove(), 400);
-      logVisit();
-    });
-    if (decline) decline.addEventListener('click', () => el.classList.add('is-declined'));
-    if (back) back.addEventListener('click', () => el.classList.remove('is-declined'));
-    setTimeout(() => { if (agree) agree.focus(); }, 600);
-  }
-
-  /* ---------- World map: draw the routes once it scrolls into view ---------- */
-  function mapReveal() {
+  /* ---------- World map: routes draw on scroll, labels follow the map, the city list highlights ---------- */
+  function worldMap() {
     const map = $('.map');
     if (!map) return;
-    if (!('IntersectionObserver' in window)) { map.classList.add('is-visible'); return; }
-    const io = new IntersectionObserver((entries) => { entries.forEach((e) => { if (e.isIntersecting) { map.classList.add('is-visible'); io.disconnect(); } }); }, { threshold: 0.2 });
-    io.observe(map);
+    if (!('IntersectionObserver' in window)) map.classList.add('is-visible');
+    else { const io = new IntersectionObserver((entries) => { entries.forEach((e) => { if (e.isIntersecting) { map.classList.add('is-visible'); io.disconnect(); } }); }, { threshold: 0.2 }); io.observe(map); }
+
+    // Labels are placed from the map's real scale: on phones the SVG is cropped (preserveAspectRatio="slice"),
+    // so the server-rendered percentages would drift.
+    const svg = $('.map__svg', map), labels = $$('.map__label', map);
+    const place = () => {
+      if (!svg || !svg.viewBox) return;
+      const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+      if (!r.width || !vb.width) return;
+      const s = Math.max(r.width / vb.width, r.height / vb.height), ox = (r.width - vb.width * s) / 2, oy = (r.height - vb.height * s) / 2;
+      labels.forEach((l) => { l.style.left = `${ox + Number(l.dataset.x) * s}px`; l.style.top = `${oy + Number(l.dataset.y) * s}px`; });
+    };
+    place();
+    let pt;
+    window.addEventListener('resize', () => { clearTimeout(pt); pt = setTimeout(place, 100); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+
+    const parts = $$('[data-city]', map), buttons = $$('.world__city');
+    const set = (id) => {
+      map.classList.toggle('has-hot', !!id);
+      parts.forEach((el) => el.classList.toggle('is-hot', !!id && el.dataset.city === id));
+      buttons.forEach((b) => b.classList.toggle('is-hot', !!id && b.dataset.cityBtn === id));
+    };
+    let touch = false;
+    buttons.forEach((b) => {
+      const id = b.dataset.cityBtn;
+      b.addEventListener('pointerdown', (e) => { touch = e.pointerType !== 'mouse'; });
+      b.addEventListener('mouseenter', () => { if (!touch) set(id); });
+      b.addEventListener('mouseleave', () => { if (!touch) set(null); });
+      b.addEventListener('focus', () => set(id));
+      b.addEventListener('blur', () => set(null));
+      b.addEventListener('click', () => { if (touch) set(id); }); // a tap elsewhere clears it
+    });
+    document.addEventListener('click', (e) => { if (touch && !e.target.closest('.world__city')) set(null); });
   }
 
   /* ---------- Boot ---------- */
   const init = () => {
     hero();
-    mapReveal();
+    worldMap();
     mobileNav();
     eventFilters();
     whatsapp();
     imageFallbacks();
     contactForm();
-    consent();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

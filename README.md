@@ -3,7 +3,7 @@
 The website of Umit Bozdag, Senior Operations Manager (exhibitions & events, London).
 Node.js + Express + EJS, vanilla CSS/JS, no build step. White, blue and black editorial theme with a London
 hyperlapse under the name, event logos and show imagery, one page per show, a Tube-style career line,
-a world map, a contact form, a WhatsApp button and a visitor-consent banner.
+a world map, a contact form, a WhatsApp button and a server-side visitor log with an admin dashboard.
 
 ## Run it
 
@@ -92,24 +92,27 @@ show image, summary and highlights, what Umit did there, his role at that organi
 navigation and other shows for the same organiser. `/shows` redirects to the Shows section of the
 home page; unknown ids return the 404 page.
 
-## Visitor consent and visit log
+## Visitor log
 
-On arrival every visitor sees a banner explaining that the site records their **IP address, browser
-type and approximate location (country and city)**. Only after they agree does the page become
-usable; **"I don't agree" keeps the site blurred and locked** (they are offered the email address and
-WhatsApp instead). The choice is remembered in the browser (`localStorage`), so the banner shows once.
+There is no consent banner: like a normal web server, the site records every public page view on
+the server and shows the results in the admin panel (Dashboard and **Visitors**).
 
-- After consent the browser calls `POST /api/visit` once per tab session. The server records: time,
-  IP, browser, OS, device type, user agent, country/region/city, page, referrer, language.
+- Each record has: time, IP address, visitor id (a hash of IP + browser, used to count visitors rather
+  than page views), browser, OS, device type, user agent, country/region/city, page, external referrer
+  and browser language. Bots and crawlers are flagged, and so are your own page views (a cookie is set
+  on the browser you sign in to the admin with); both are hidden by default and can be shown with a tick box.
 - Location comes from the host's geo headers when present (Vercel: `x-vercel-ip-*`; Cloudflare:
-  `cf-ipcountry`). Hosts without them (e.g. Hostinger) can set **`GEOIP_PROVIDER=ipapi`** to look the
-  IP up at ipapi.co (free tier, ~1,000 lookups/day).
-- Records are appended to **`data/visits.json`** (git-ignored, newest 5,000 kept) and printed to the
-  server log as `[visit] {...}`. On Vercel the disk is read-only, so only the log line is kept there.
-- Read them with **`GET /api/visits?key=<ADMIN_KEY>`** after setting an `ADMIN_KEY` environment
-  variable (without it the route answers 404). Example:
-  `curl "https://umitbozdag.com/api/visits?key=YOUR_KEY"`.
-- `/privacy` (`views/privacy.ejs`) is the privacy notice the banner links to — keep it in step with
+  `cf-ipcountry`). Hosts without them (e.g. Hostinger) are looked up at **ipapi.co** (free tier,
+  ~1,000 lookups a day; answers are cached per IP for a day). Set `GEOIP_PROVIDER=off` to turn that off.
+- Records are appended to **`data/visits.jsonl`** (git-ignored, newest 20,000 kept). An older
+  `data/visits.json` is migrated automatically. On Vercel the disk is temporary, so the log only lasts
+  as long as the instance.
+- The admin panel offers summaries (visitors per day for 30 days, countries, cities, pages, referrers,
+  browsers, devices, languages), a searchable table, a CSV download and a "clear log" button.
+  The raw log is also available without signing in at **`GET /api/visits?key=<ADMIN_KEY>`** once an
+  `ADMIN_KEY` environment variable is set (without it the route answers 404).
+- Admin pages, API calls, prefetches and failed requests are not counted.
+- `/privacy` (`views/privacy.ejs`) is the privacy notice linked from the footer — keep it in step with
   what you collect and how long you keep it (it currently says up to 12 months).
 
 ## Contact form
@@ -145,7 +148,7 @@ Needs a Hostinger plan with **Node.js Web Apps** (Business or Cloud web hosting,
    To self-host the header video, use `npm install && npm run fetch:video` as the build command.
 4. Environment variables: `NODE_ENV=production`, the `SMTP_*` variables above so the contact form
    emails you, `ADMIN_PASSWORD` (and ideally `SESSION_SECRET`) for the admin panel, and
-   `GEOIP_PROVIDER=ipapi` so visits get a country and city. Hostinger provides `PORT` automatically.
+   (location lookups via ipapi.co are on by default; `GEOIP_PROVIDER=off` disables them). Hostinger provides `PORT` automatically.
 5. Deploy, then attach `umitbozdag.com` / `www.umitbozdag.com` under the app's **Domains** and enable SSL.
 
 Every push to the chosen branch can redeploy automatically (toggle in the app's deployment settings).

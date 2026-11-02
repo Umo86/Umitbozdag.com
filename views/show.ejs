@@ -128,25 +128,6 @@
   </div>
   <% } %>
 
-  <div class="consent" hidden role="dialog" aria-modal="true" aria-labelledby="consent-title">
-    <div class="consent__box">
-      <div class="consent__step consent__step--ask">
-        <span class="kicker" style="margin-bottom:0">Before you continue</span>
-        <h2 id="consent-title">This site records basic visitor details.</h2>
-        <p>When you browse umitbozdag.com I record your <strong>IP address</strong>, <strong>browser type</strong> and approximate <strong>location (country and city)</strong>, so I can see who visits. Nothing is sold or passed to advertisers. Details are in the <a href="/privacy">privacy notice</a>.</p>
-        <div class="consent__actions">
-          <button type="button" class="btn" data-consent="agree">I agree — continue</button>
-          <button type="button" class="btn btn--o" data-consent="decline">I don’t agree</button>
-        </div>
-      </div>
-      <div class="consent__step consent__step--no">
-        <span class="kicker" style="margin-bottom:0">No problem</span>
-        <h2>Without your agreement this site can’t be browsed.</h2>
-        <p>You’re still welcome to get in touch directly: <a href="mailto:<%= p.email %>"><%= p.email %></a><% if (waHref) { %> or <a href="<%= waHref %>" target="_blank" rel="noopener">WhatsApp</a><% } %>.</p>
-        <div class="consent__actions"><button type="button" class="btn" data-consent="back">Go back</button></div>
-      </div>
-    </div>
-  </div>
   <script src="/js/main.js" defer></script>
 </body>
 </html>

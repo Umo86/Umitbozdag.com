@@ -7,8 +7,11 @@ npm-debug.log*
 screenshots/
 public/video/*.part
 data/visits.json
+data/visits.json.migrated
+data/visits.jsonl
 data/content.json
 data/admin.json
+data/setup-code.txt
 data/.secret
 data/*.tmp
 public/uploads/
