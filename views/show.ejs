@@ -15,6 +15,10 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <%
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fmtDate = (d) => { const m = /^(\d{4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?/.exec(String(d || '')); if (!m) return String(d || ''); const mon = m[2] ? MONTHS[Number(m[2]) - 1] : ''; return [m[3] ? Number(m[3]) : '', mon, m[1]].filter(Boolean).join(' '); };
+%>
+<%
   const lg = show.logoUrl || logos[show.logo] || null;
   const waHref = p.whatsapp ? `https://wa.me/${p.whatsapp}?text=${encodeURIComponent(p.whatsappText || '')}` : null;
   const where = [show.venue, show.city, show.country].filter(Boolean).join(' · ');
@@ -47,6 +51,7 @@
             <p class="showhero__where"><%= where %><% if (show.dates) { %> · <%= show.dates %><% } else if (show.years) { %> · <%= show.years %><% } %></p>
             <div class="btns">
               <% if (show.url) { %><a class="btn" href="<%= show.url %>" target="_blank" rel="noopener">Event website ↗</a><% } %>
+              <% if (show.press && show.press.length) { %><a class="btn btn--o" href="#press">In the press</a><% } %>
               <a class="btn btn--o" href="/#contact">Get in touch</a>
             </div>
           </div>
@@ -62,6 +67,14 @@
           <% if (show.highlights && show.highlights.length) { %><ul class="highlights"><% show.highlights.forEach((h) => { %><li><%= h %></li><% }) %></ul><% } %>
           <h2>What I did</h2>
           <ul class="points"><% (show.responsibilities || []).forEach((r) => { %><li><%= r %></li><% }) %></ul>
+          <% if (show.press && show.press.length) { %>
+            <h2 id="press">In the press</h2>
+            <ul class="press">
+              <% show.press.forEach((a) => { %>
+                <li><a href="<%= a.url %>" target="_blank" rel="noopener nofollow"><span><span class="press__meta"><%= a.source %><% if (a.date) { %> · <%= fmtDate(a.date) %><% } %></span><strong><%= a.title %></strong></span><span class="press__arr">↗</span></a></li>
+              <% }) %>
+            </ul>
+          <% } %>
           <% if (exp && exp.points && exp.points.length) { %>
             <h2>My role at <%= employer.name %> (<%= exp.period %>)</h2>
             <p style="color:#2c2f36;margin-bottom:14px"><%= exp.summary %></p>

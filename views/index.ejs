@@ -155,7 +155,7 @@
             <li data-org="<%= s.organiser %>">
               <a class="evt" href="/shows/<%= s.id %>">
                 <span class="evt__logo"><% if (lg) { %><img src="<%= lg %>" alt="" loading="lazy"><% } else { %><span class="initials"><%= initials(s.name) %></span><% } %></span>
-                <span><strong><%= s.name %></strong><span class="evt__where"><%= [s.venue, s.city].filter(Boolean).join(', ') %><%= org ? ' · ' + org.name : '' %></span></span>
+                <span><strong><%= s.name %></strong><span class="evt__where"><%= [s.venue, s.city].filter(Boolean).join(', ') %><%= org ? ' · ' + org.name : '' %><% if (s.press && s.press.length) { %><em class="evt__tag">In the press</em><% } %></span></span>
                 <span class="evt__year"><%= s.years || '' %></span>
                 <span class="evt__arr" aria-hidden="true">→</span>
               </a>

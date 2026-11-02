@@ -23,6 +23,10 @@ map) and **Contact**. Everything shown lives in **`data/profile.js`** — name, 
 `shows` (each with its own page), `experience` (used on the show pages), map `cities` and contact
 links. Edit that file and restart; no HTML changes are needed.
 
+- **Press coverage:** a show can carry a `press` list — `{ title, source, date, url }` objects — shown on its
+  page as **"In the press"** (external links, newest first as entered) and as a small "In the press" marker in
+  the home-page list. In the admin it is one line per article: `Headline | Publication | 2015-09-10 | https://…`.
+  Links must be absolute web addresses; the date can be `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
 - **Shows:** each entry in `shows` has an `id` (its page is `/shows/<id>`), `logo` (see below), `url`
   (the event website, linked from the card and the page), `image`, `venue`/`city`/`country`,
   `years` or `dates`, a `summary`, `responsibilities` and optional `highlights`. `featured: true` puts
